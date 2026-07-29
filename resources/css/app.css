@@ -1,0 +1,148 @@
+@import './themes/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+|--------------------------------------------------------------------------
+| Design System — Premium Dental Clinic (Arabic RTL, mobile-first)
+|--------------------------------------------------------------------------
+*/
+
+@layer base {
+    html {
+        @apply scroll-smooth antialiased;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+        @apply bg-background font-sans text-base leading-relaxed text-foreground antialiased;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    /* Comfortable selection for medical UI */
+    ::selection {
+        background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+@layer components {
+    /* Focus — visible for keyboard / a11y */
+    .ds-focus {
+        @apply focus:outline-none focus:ring-2 focus:ring-primary-muted focus:ring-offset-2 focus:ring-offset-background focus:border-primary;
+    }
+
+    /* Surfaces */
+    .ds-surface {
+        @apply rounded-ds-lg border border-border bg-surface shadow-soft;
+    }
+
+    .ds-panel {
+        @apply rounded-ds-lg border border-border bg-surface-subtle;
+    }
+
+    /* Form controls — large touch targets (min 48px) */
+    .ds-control {
+        @apply w-full min-h-12 rounded-ds border-border bg-surface px-4 py-3 text-base text-foreground shadow-soft placeholder:text-foreground-subtle ds-focus disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-foreground-subtle;
+    }
+
+    .ds-control[aria-invalid='true'] {
+        @apply border-danger focus:border-danger focus:ring-danger-soft;
+    }
+
+    .ds-label {
+        @apply mb-2 block text-sm font-semibold text-foreground;
+    }
+
+    /* Navigation — Linear / Notion style, 44px+ targets */
+    .ds-nav-link {
+        @apply flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-[15px] font-medium text-sidebar-foreground transition hover:bg-sidebar-muted hover:text-primary active:bg-sidebar-muted;
+    }
+
+    .ds-nav-link-active {
+        @apply bg-sidebar-muted font-semibold text-primary;
+    }
+
+    .ds-nav-icon {
+        @apply h-5 w-5 shrink-0 opacity-70;
+    }
+
+    .ds-nav-link-active .ds-nav-icon {
+        @apply opacity-100;
+    }
+
+    /* Layout rhythm */
+    .ds-stack {
+        @apply space-y-6 sm:space-y-8;
+    }
+
+    .ds-grid-stats {
+        @apply grid gap-3 sm:gap-4 grid-cols-2 xl:grid-cols-4;
+    }
+
+    .ds-grid-2 {
+        @apply grid gap-5 sm:gap-6 lg:grid-cols-2;
+    }
+
+    .ds-list-stack {
+        @apply space-y-3;
+    }
+
+    /* Premium accents */
+    .ds-gold-line {
+        @apply h-0.5 w-12 rounded-full bg-accent;
+    }
+
+    .ds-avatar {
+        @apply flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-primary-foreground font-bold shadow-soft;
+    }
+
+    .ds-section-title {
+        @apply text-lg font-bold tracking-tight text-foreground sm:text-xl;
+    }
+
+    .ds-section-desc {
+        @apply mt-1 text-sm text-foreground-muted sm:text-base;
+    }
+
+    .ds-empty-ring {
+        @apply flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft text-primary;
+    }
+
+    /* Touch feedback */
+    .ds-press {
+        @apply transition active:scale-[0.98];
+    }
+
+    /* Definition rows (booking details, success) */
+    .ds-detail-row {
+        @apply flex items-start justify-between gap-4 border-b border-border pb-3.5 last:border-0 last:pb-0;
+    }
+
+    .ds-detail-label {
+        @apply shrink-0 text-sm text-foreground-muted;
+    }
+
+    .ds-detail-value {
+        @apply text-end text-sm font-semibold text-foreground sm:text-base;
+    }
+
+    /* Loading spinner */
+    .ds-spinner {
+        @apply inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-r-transparent;
+    }
+
+    /* Safe-area padding helpers (notched phones) */
+    .ds-safe-top {
+        padding-top: max(0.75rem, env(safe-area-inset-top, 0));
+    }
+
+    .ds-safe-bottom {
+        padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0));
+    }
+}

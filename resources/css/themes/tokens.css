@@ -1,0 +1,63 @@
+/*
+|--------------------------------------------------------------------------
+| Theme CSS Variables — Dental Medical Clinic
+|--------------------------------------------------------------------------
+| Deep Burgundy · Luxury Gold · Warm White · Charcoal
+*/
+
+:root {
+    --color-primary: #6B1E2A;
+    --color-primary-soft: #F8F0F2;
+    --color-primary-muted: #D4A8B0;
+    --color-primary-hover: #541722;
+    --color-primary-foreground: #FFFFFF;
+
+    --color-secondary: #1F1A17;
+    --color-secondary-soft: #F3F0EC;
+    --color-secondary-hover: #2C2622;
+    --color-secondary-foreground: #FFFFFF;
+
+    --color-accent: #C9A84C;
+    --color-accent-soft: #FBF6E8;
+    --color-accent-foreground: #5C4A1A;
+
+    --color-sidebar: #FFFFFF;
+    --color-sidebar-foreground: #3D3834;
+    --color-sidebar-muted: #F8F0F2;
+    --color-sidebar-border: #EAE6E0;
+
+    --color-navbar: #FFFFFF;
+    --color-navbar-foreground: #1F1A17;
+    --color-navbar-border: #EAE6E0;
+
+    --color-success: #0F766E;
+    --color-success-soft: #F0FDFA;
+    --color-success-foreground: #134E4A;
+
+    --color-warning: #B45309;
+    --color-warning-soft: #FFFBEB;
+    --color-warning-foreground: #78350F;
+
+    --color-danger: #B91C1C;
+    --color-danger-soft: #FEF2F2;
+    --color-danger-foreground: #7F1D1D;
+
+    --color-background: #F7F4EF;
+    --color-surface: #FFFFFF;
+    --color-surface-muted: #FAF8F5;
+    --color-surface-subtle: #F0EDE8;
+    --color-border: #EAE6E0;
+
+    --color-text: #1F1A17;
+    --color-text-muted: #6B6560;
+    --color-text-subtle: #9A948C;
+
+    --color-overlay: rgb(31 26 23 / 0.40);
+
+    --radius: 1rem;
+    --radius-lg: 1.25rem;
+
+    --logo-url: none;
+    --logo-dark-url: none;
+    --favicon-url: url('/favicon.ico');
+}

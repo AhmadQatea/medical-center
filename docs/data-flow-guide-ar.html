@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>دليل تدفق البيانات — Doctors Bookings</title>
+  <link rel="preconnect" href="https://fonts.bunny.net">
+  <link href="https://fonts.bunny.net/css?family=cairo:400,500,600,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f4ef;
+      --surface: #ffffff;
+      --text: #1f1a17;
+      --muted: #6b6560;
+      --border: #eae6e0;
+      --primary: #6b1e2a;
+      --accent: #c9a84c;
+      --code-bg: #1f1a17;
+      --code-fg: #f7f4ef;
+      --soft: #f8f0f2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Cairo", system-ui, sans-serif;
+      background: linear-gradient(180deg, #fbf8f3 0%, var(--bg) 40%, #efe8df 100%);
+      color: var(--text);
+      line-height: 1.85;
+      font-size: 1.05rem;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 2rem 1.25rem 5rem; }
+    header.hero {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 2rem 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgb(31 26 23 / 0.06);
+    }
+    header.hero h1 {
+      margin: 0 0 0.5rem;
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      color: var(--primary);
+    }
+    header.hero p { margin: 0.35rem 0; color: var(--muted); }
+    .badge {
+      display: inline-block;
+      background: var(--soft);
+      color: var(--primary);
+      border-radius: 999px;
+      padding: 0.2rem 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-left: 0.35rem;
+    }
+    nav.toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+      position: sticky;
+      top: 0.75rem;
+      z-index: 10;
+      max-height: 70vh;
+      overflow: auto;
+    }
+    nav.toc h2 { margin: 0 0 0.75rem; font-size: 1.1rem; color: var(--primary); }
+    nav.toc ol { margin: 0; padding-inline-start: 1.25rem; }
+    nav.toc a { color: var(--text); text-decoration: none; }
+    nav.toc a:hover { color: var(--primary); text-decoration: underline; }
+    section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.5rem 1.35rem;
+      margin-bottom: 1.25rem;
+    }
+    section h2 {
+      margin-top: 0;
+      color: var(--primary);
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.4rem;
+    }
+    section h3 { color: #3d1a22; margin-top: 1.5rem; }
+    section h4 { margin-bottom: 0.35rem; }
+    .note {
+      background: var(--soft);
+      border-inline-start: 4px solid var(--primary);
+      padding: 0.85rem 1rem;
+      border-radius: 0.5rem;
+      margin: 1rem 0;
+    }
+    .warn {
+      background: #fffbeb;
+      border-inline-start: 4px solid #b45309;
+      padding: 0.85rem 1rem;
+      border-radius: 0.5rem;
+      margin: 1rem 0;
+    }
+    .ok {
+      background: #f0fdfa;
+      border-inline-start: 4px solid #0f766e;
+      padding: 0.85rem 1rem;
+      border-radius: 0.5rem;
+      margin: 1rem 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+      margin: 1rem 0;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.65rem;
+      text-align: start;
+      vertical-align: top;
+    }
+    th { background: var(--soft); color: var(--primary); }
+    code, .kw {
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: 0.88em;
+      background: #f3f0ec;
+      padding: 0.1rem 0.35rem;
+      border-radius: 0.3rem;
+      direction: ltr;
+      unicode-bidi: isolate;
+      display: inline-block;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-fg);
+      padding: 1rem 1.1rem;
+      border-radius: 0.75rem;
+      overflow-x: auto;
+      direction: ltr;
+      text-align: left;
+      font-size: 0.85rem;
+      line-height: 1.55;
+    }
+    .flow {
+      display: grid;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+    .flow-step {
+      background: #faf8f5;
+      border: 1px dashed var(--border);
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+    }
+    .flow-step strong { color: var(--primary); }
+    .arrow { text-align: center; color: var(--accent); font-weight: 700; }
+    ul.dense li { margin-bottom: 0.35rem; }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>دليل تدفق البيانات الشامل</h1>
+      <p>مشروع: <strong>Doctors Bookings</strong> — نظام حجز مواعيد لعيادة طبيب أسنان واحد (د. مصطفى بكرو).</p>
+      <p>
+        <span class="badge">Laravel 12</span>
+        <span class="badge">Blade</span>
+        <span class="badge">Eloquent</span>
+        <span class="badge">Alpine.js</span>
+        <span class="badge">RTL عربي</span>
+      </p>
+      <p>الهدف من هذا الملف: أن تفهم <em>بالتفصيل الممل</em> كيف تنتقل البيانات من الواجهة إلى قاعدة البيانات وبالعكس، وما هو الـ <code>route</code> المسؤول، وما هي الـ <code>Models</code> والطبقات بينهما.</p>
+      <p><strong>قاعدة العرض:</strong> الشرح بالعربية، بينما تبقى المصطلحات والكلمات المفتاحية التقنية كما هي (<code>Controller</code>, <code>Service</code>, <code>Model</code>, <code>Migration</code>, …).</p>
+    </header>
+
+    <nav class="toc">
+      <h2>فهرس المحتوى</h2>
+      <ol>
+        <li><a href="#idea">فكرة المشروع باختصار</a></li>
+        <li><a href="#stack">الطبقات المعمارية (Architecture)</a></li>
+        <li><a href="#request-life">دورة حياة الطلب (Request Lifecycle)</a></li>
+        <li><a href="#routes-files">ملفات الـ Routes وكيف تُسجَّل</a></li>
+        <li><a href="#routes-table">جدول كل الـ Routes في الموقع</a></li>
+        <li><a href="#models">الـ Models والجداول</a></li>
+        <li><a href="#read-flow">مسار القراءة: من Database إلى الشاشة</a></li>
+        <li><a href="#write-flow">مسار الكتابة: من النموذج إلى Database</a></li>
+        <li><a href="#settings">مثال كامل 1: إعدادات العيادة (مكتمل)</a></li>
+        <li><a href="#schedule">مثال كامل 2: إدارة الجدول (مكتمل)</a></li>
+        <li><a href="#booking">مثال كامل 3: صفحة الحجز العام /book</a></li>
+        <li><a href="#whatsapp">رقم واتساب والتحويل إلى wa.me</a></li>
+        <li><a href="#auth">المصادقة Auth</a></li>
+        <li><a href="#stubs">ما هو مكتمل وما هو Stub بعد</a></li>
+        <li><a href="#study">خطة دراسة مقترحة</a></li>
+      </ol>
+    </nav>
+
+    <!-- 1 -->
+    <section id="idea">
+      <h2>1) فكرة المشروع باختصار</h2>
+      <p>هذا ليس نظام SaaS متعدد العيادات. يوجد <strong>طبيب واحد</strong> فقط يملك حساب تسجيل دخول، وكل الجداول تقريباً ترتبط به عبر العمود <code>user_id</code>.</p>
+      <ul class="dense">
+        <li><strong>الطبيب (Doctor):</strong> يدخل عبر <code>/login</code> ويدير لوحة <code>/doctor/*</code>.</li>
+        <li><strong>المريض (Patient):</strong> لا يملك حساباً. يحجز كزائر عبر <code>/book</code>.</li>
+      </ul>
+      <div class="note">
+        رقم التواصل الحالي للعيادة (واتساب): <code dir="ltr">09594334213</code>
+        — يُحفظ في <code>config/clinic.php</code> كمفتاح <code>whatsapp</code>، وفي جدول <code>clinic_settings.whatsapp_number</code> كمصدر الحقيقة للواجهة.
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section id="stack">
+      <h2>2) الطبقات المعمارية (Architecture)</h2>
+      <p>المشروع يتبع ترتيباً صارماً حتى لا تختلط المسؤوليات:</p>
+      <div class="flow">
+        <div class="flow-step"><strong>1. Route</strong> — يحدد عنوان URL + HTTP Method + اسم المسار Named Route + الـ Controller.</div>
+        <div class="arrow">↓</div>
+        <div class="flow-step"><strong>2. Controller</strong> — رفيع جداً (thin). يستقبل الطلب، يستدعي Service/Action، ويرجع View أو Redirect.</div>
+        <div class="arrow">↓</div>
+        <div class="flow-step"><strong>3. Form Request</strong> — يتحقق من صحة المدخلات (Validation) قبل أي كتابة.</div>
+        <div class="arrow">↓</div>
+        <div class="flow-step"><strong>4. Action</strong> — حالة استخدام كتابة واحدة (Write use-case) غالباً داخل <code>DB::transaction</code>.</div>
+        <div class="arrow">↓</div>
+        <div class="flow-step"><strong>5. Service</strong> — منطق المجال المشترك (قراءة/كتابة/حساب المواعيد).</div>
+        <div class="arrow">↓</div>
+        <div class="flow-step"><strong>6. Model (Eloquent)</strong> — يمثل جدولاً: علاقات، <code>$fillable</code>, <code>casts()</code> فقط. بدون منطق أعمال ثقيل.</div>
+        <div class="arrow">↓</div>
+        <div class="flow-step"><strong>7. Database</strong> — الجداول الفعلية عبر Migrations.</div>
+      </div>
+      <div class="warn">
+        مهم جداً للدراسة: <code>user_id</code> <strong>لا يوضع</strong> في <code>$fillable</code>. يُعيَّن عبر العلاقة مثل
+        <code>$doctor-&gt;clinicSetting()-&gt;firstOrCreate(...)</code>
+        حتى لا يستطيع أحد حقن ملكية سجل لطبيب آخر عبر النموذج.
+      </div>
+      <h3>أين توجد الملفات؟</h3>
+      <table>
+        <thead><tr><th>الطبقة</th><th>المسار</th></tr></thead>
+        <tbody>
+          <tr><td><code>Routes</code></td><td><code>routes/web.php</code>, <code>routes/booking.php</code>, <code>routes/doctor.php</code>, <code>routes/auth.php</code></td></tr>
+          <tr><td><code>Controllers</code></td><td><code>app/Http/Controllers/Doctor/*</code> و <code>app/Http/Controllers/Booking/*</code></td></tr>
+          <tr><td><code>Form Requests</code></td><td><code>app/Http/Requests/Doctor/*</code></td></tr>
+          <tr><td><code>Actions</code></td><td><code>app/Actions/ClinicSettings/*</code>, <code>app/Actions/Schedule/*</code></td></tr>
+          <tr><td><code>Services</code></td><td><code>app/Services/*</code></td></tr>
+          <tr><td><code>Models</code></td><td><code>app/Models/*</code></td></tr>
+          <tr><td><code>Views (Blade)</code></td><td><code>resources/views/**</code></td></tr>
+          <tr><td><code>Migrations</code></td><td><code>database/migrations/2026_07_26_*</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3 -->
+    <section id="request-life">
+      <h2>3) دورة حياة الطلب (Request Lifecycle) — بالتفصيل الممل</h2>
+      <p>تخيل أن المستخدم فتح الرابط <code>/book</code> أو ضغط زر «حفظ» في إعدادات العيادة. ماذا يحدث خطوة بخطوة؟</p>
+
+      <h3>أ) طلب قراءة (GET) لعرض صفحة</h3>
+      <ol>
+        <li>المتصفح يرسل <code>HTTP GET</code> إلى الخادم.</li>
+        <li>Laravel يدخل من <code>public/index.php</code> ثم يبني التطبيق عبر <code>bootstrap/app.php</code>.</li>
+        <li>يُطبَّق Middleware مجموعة <code>web</code> (جلسة Session، CSRF للـ POST لاحقاً، كوكيز…).</li>
+        <li>موجّه التوجيه Router يطابق الـ URI مع تعريف في ملفات <code>routes/*.php</code>.</li>
+        <li>يُستدعى Method داخل الـ Controller (مثل <code>PublicBookingController@index</code>).</li>
+        <li>الـ Controller يطلب بيانات من Service (مثلاً إعدادات العيادة + الأيام المتاحة).</li>
+        <li>الـ Service يقرأ عبر Model من Database (SQL تحت الغطاء).</li>
+        <li>الـ Controller يمرر مصفوفة بيانات إلى <code>view('booking.index', [...])</code>.</li>
+        <li>محرك Blade يترجم القالب إلى HTML.</li>
+        <li>Vite يحقن ملفات CSS/JS المجمّعة (<code>@vite</code>).</li>
+        <li>المتصفح يعرض الصفحة. إن وُجد Alpine.js يبدأ التفاعل داخل المتصفح بدون إعادة تحميل لكل نقرة.</li>
+      </ol>
+
+      <h3>ب) طلب كتابة (POST/PUT/DELETE)</h3>
+      <ol>
+        <li>المستخدم يملأ <code>&lt;form&gt;</code> ويضغط إرسال.</li>
+        <li>المتصفح يرسل الحقول + توكن <code>_token</code> (CSRF) + أحياناً <code>_method</code> لمحاكاة PUT/DELETE.</li>
+        <li>Laravel يتحقق من CSRF. إن فشل → خطأ 419.</li>
+        <li>إن وُجد Form Request يُنفَّذ <code>rules()</code>. إن فشل Validation → رجوع للصفحة مع <code>$errors</code> و <code>old()</code>.</li>
+        <li>عند النجاح يستدعي Controller الـ Action أو Service.</li>
+        <li>Eloquent ينفّذ <code>INSERT</code> / <code>UPDATE</code> / <code>DELETE</code>.</li>
+        <li>الـ Controller يرجع <code>redirect()-&gt;route(...)-&gt;with('success', '...')</code>.</li>
+        <li>الصفحة التالية تقرأ Flash Message وتعرضه للمستخدم.</li>
+      </ol>
+
+      <div class="note">
+        في Laravel نستخدم غالباً Named Routes مثل <code>route('doctor.settings.update')</code> بدل كتابة الرابط يدوياً، حتى لا ينكسر شيء عند تغيير الـ URI.
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section id="routes-files">
+      <h2>4) ملفات الـ Routes وكيف تُسجَّل</h2>
+      <p>التسجيل المركزي في <code>bootstrap/app.php</code>:</p>
+      <pre>withRouting(
+    web: routes/web.php,
+    then: function () {
+        Route::middleware('web')->group(routes/booking.php);
+        Route::middleware('web')->group(routes/doctor.php);
+        Route::middleware('web')->group(routes/auth.php);
+    }
+)</pre>
+      <table>
+        <thead><tr><th>الملف</th><th>الدور</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>routes/web.php</code></td>
+            <td>مداخل عامة</td>
+            <td><code>/</code> → تحويل إلى <code>/book</code>. <code>/dashboard</code> → <code>/doctor/dashboard</code>. مسارات Profile الخاصة بـ Breeze.</td>
+          </tr>
+          <tr>
+            <td><code>routes/booking.php</code></td>
+            <td>حجز المريض</td>
+            <td>بادئة <code>/book</code> وأسماء <code>booking.*</code>. عامة بدون auth. الـ POST مقيّد بـ <code>throttle:10,1</code>.</td>
+          </tr>
+          <tr>
+            <td><code>routes/doctor.php</code></td>
+            <td>لوحة الطبيب</td>
+            <td>بادئة <code>/doctor</code> + Middleware <code>auth</code> + أسماء <code>doctor.*</code>.</td>
+          </tr>
+          <tr>
+            <td><code>routes/auth.php</code></td>
+            <td>تسجيل الدخول/الخروج/كلمة المرور</td>
+            <td>من Laravel Breeze.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 5 -->
+    <section id="routes-table">
+      <h2>5) جدول كل الـ Routes في الموقع</h2>
+      <p>العمود «الاسم» هو Named Route الذي تستخدمه في Blade عبر <code>route('...')</code>.</p>
+
+      <h3>عامة + حجز</h3>
+      <table>
+        <thead><tr><th>Method</th><th>URI</th><th>Name</th><th>Controller</th><th>ماذا يفعل؟</th></tr></thead>
+        <tbody>
+          <tr><td>ANY</td><td><code>/</code></td><td><code>home</code></td><td>Redirect</td><td>يحول إلى صفحة الحجز</td></tr>
+          <tr><td>GET</td><td><code>/book</code></td><td><code>booking.index</code></td><td><code>PublicBookingController@index</code></td><td>يعرض واجهة الحجز خطوة بخطوة</td></tr>
+          <tr><td>POST</td><td><code>/book</code></td><td><code>booking.store</code></td><td><code>PublicBookingController@store</code></td><td>مخصص لحفظ الحجز لاحقاً (حالياً Stub)</td></tr>
+          <tr><td>GET</td><td><code>/book/success</code></td><td><code>booking.success</code></td><td><code>PublicBookingController@success</code></td><td>صفحة نجاح فقط إذا وُجدت Session <code>booking_completed</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>لوحة الطبيب</h3>
+      <table>
+        <thead><tr><th>Method</th><th>URI</th><th>Name</th><th>Controller</th><th>Model / بيانات مرتبطة</th></tr></thead>
+        <tbody>
+          <tr><td>GET</td><td><code>/doctor/dashboard</code></td><td><code>doctor.dashboard</code></td><td><code>DashboardController</code></td><td>سيقرأ لاحقاً من <code>Appointment</code></td></tr>
+          <tr><td>GET</td><td><code>/doctor/schedule</code></td><td><code>doctor.schedule.index</code></td><td><code>ScheduleController@index</code></td><td><code>ScheduleSetting</code>, <code>WorkingHour</code>, <code>Holiday</code></td></tr>
+          <tr><td>PUT</td><td><code>/doctor/schedule</code></td><td><code>doctor.schedule.update</code></td><td><code>ScheduleController@update</code></td><td>يحفظ الإعدادات + أيام العمل</td></tr>
+          <tr><td>POST</td><td><code>/doctor/schedule/holidays</code></td><td><code>doctor.schedule.holidays.store</code></td><td><code>ScheduleController@storeHoliday</code></td><td><code>Holiday</code></td></tr>
+          <tr><td>DELETE</td><td><code>/doctor/schedule/holidays/{holiday}</code></td><td><code>doctor.schedule.holidays.destroy</code></td><td><code>ScheduleController@destroyHoliday</code></td><td><code>Holiday</code> (Route Model Binding)</td></tr>
+          <tr><td>GET</td><td><code>/doctor/settings</code></td><td><code>doctor.settings.index</code></td><td><code>ClinicSettingsController@edit</code></td><td><code>ClinicSetting</code> + اسم الطبيب من <code>User</code></td></tr>
+          <tr><td>PUT</td><td><code>/doctor/settings</code></td><td><code>doctor.settings.update</code></td><td><code>ClinicSettingsController@update</code></td><td>كتابة عبر Action</td></tr>
+          <tr><td>GET/POST/…</td><td><code>/doctor/bookings*</code></td><td><code>doctor.bookings.*</code></td><td><code>BookingController</code></td><td><code>Appointment</code> (المنطق Stub)</td></tr>
+          <tr><td>GET</td><td><code>/doctor/bookings/instant</code></td><td><code>doctor.bookings.instant</code></td><td><code>BookingController@instant</code></td><td>نموذج حجز يدوي</td></tr>
+          <tr><td>CRUD</td><td><code>/doctor/patients*</code></td><td><code>doctor.patients.*</code></td><td><code>PatientController</code></td><td><code>Patient</code> (Stub)</td></tr>
+          <tr><td>GET</td><td><code>/doctor/timeline</code></td><td><code>doctor.timeline.index</code></td><td><code>TimelineController</code></td><td>سيعتمد على المواعيد</td></tr>
+          <tr><td>GET/PUT/DELETE</td><td><code>/doctor/profile</code></td><td><code>doctor.profile.*</code></td><td><code>Doctor\ProfileController</code></td><td>واجهة؛ التحديث الفعلي غالباً عبر Breeze <code>profile.update</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Auth (Breeze)</h3>
+      <table>
+        <thead><tr><th>URI</th><th>Name</th><th>الغرض</th></tr></thead>
+        <tbody>
+          <tr><td><code>/login</code></td><td><code>login</code></td><td>عرض/تنفيذ تسجيل الدخول</td></tr>
+          <tr><td><code>/logout</code> (POST)</td><td><code>logout</code></td><td>إنهاء الجلسة</td></tr>
+          <tr><td><code>/forgot-password</code> …</td><td><code>password.*</code></td><td>إعادة تعيين كلمة المرور</td></tr>
+          <tr><td><code>/profile</code> (PATCH/DELETE)</td><td><code>profile.update</code> / <code>profile.destroy</code></td><td>تحديث حساب المستخدم (Breeze)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 6 -->
+    <section id="models">
+      <h2>6) الـ Models والجداول — من يملك ماذا؟</h2>
+      <p>كل Model في <code>app/Models</code> يقابل جدولاً. العلاقة الأساسية: الطبيب <code>User</code> هو الجذر.</p>
+      <pre>User (users)
+ ├── hasOne  ClinicSetting     (clinic_settings)
+ ├── hasOne  ScheduleSetting   (schedule_settings)
+ ├── hasMany WorkingHour       (working_hours)   // عادة 7 صفوف، weekday 0=أحد … 6=سبت
+ ├── hasMany Holiday           (holidays)
+ ├── hasMany Patient           (patients)        // SoftDeletes
+ └── hasMany Appointment       (appointments)
+        └── belongsTo Patient</pre>
+
+      <table>
+        <thead><tr><th>Model</th><th>الجدول</th><th>أهم الأعمدة</th><th>دورها في التدفق</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>User</code></td>
+            <td><code>users</code></td>
+            <td><code>name</code>, <code>email</code>, <code>password</code></td>
+            <td>حساب الطبيب للمصادقة؛ اسمه يظهر في الحجز العام وإعدادات العيادة</td>
+          </tr>
+          <tr>
+            <td><code>ClinicSetting</code></td>
+            <td><code>clinic_settings</code></td>
+            <td><code>clinic_name</code>, <code>specialty</code>, <code>whatsapp_number</code>, <code>address</code>…</td>
+            <td>هوية العيادة العامة + رقم واتساب</td>
+          </tr>
+          <tr>
+            <td><code>ScheduleSetting</code></td>
+            <td><code>schedule_settings</code></td>
+            <td><code>appointment_duration_minutes</code>, <code>break_duration_minutes</code>, lunch_*</td>
+            <td>قواعد حساب طول الموعد والفاصل والغداء</td>
+          </tr>
+          <tr>
+            <td><code>WorkingHour</code></td>
+            <td><code>working_hours</code></td>
+            <td><code>weekday</code>, <code>is_open</code>, <code>start_time</code>, <code>end_time</code></td>
+            <td>أيام/ساعات الفتح التي تغذي صفحة /book</td>
+          </tr>
+          <tr>
+            <td><code>Holiday</code></td>
+            <td><code>holidays</code></td>
+            <td><code>date</code>, <code>title</code>, <code>note</code></td>
+            <td>إغلاق يوم كامل → لا مواعيد في ذلك التاريخ</td>
+          </tr>
+          <tr>
+            <td><code>Patient</code></td>
+            <td><code>patients</code></td>
+            <td><code>name</code>, <code>phone</code>, notes…</td>
+            <td>سجل المرضى (بدون تسجيل دخول)</td>
+          </tr>
+          <tr>
+            <td><code>Appointment</code></td>
+            <td><code>appointments</code></td>
+            <td><code>date</code>, <code>start_time</code>, <code>end_time</code>, <code>status</code>, <code>source</code></td>
+            <td>الموعد الفعلي؛ يُستثنى من الأوقات المتاحة إن لم يكن ملغى</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="ok">
+        قرار تصميمي مهم: <strong>لا يوجد جدول <code>time_slots</code></strong>. الأوقات تُحسب وقت التشغيل في <code>ScheduleService::availableSlots()</code>
+        من: ساعات العمل − الغداء − الإجازات − المواعيد المحجوزة − الأوقات الماضية لليوم الحالي.
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section id="read-flow">
+      <h2>7) مسار القراءة: من Database إلى الشاشة</h2>
+      <p>القاعدة العامة للقراءة في هذا المشروع:</p>
+      <pre>Browser GET
+  → Route
+  → Controller
+  → Service::get... / list... / bookingWeeks...
+  → Eloquent Model (SELECT)
+  → Controller يمرر المتغيرات إلى Blade
+  → HTML للمستخدم</pre>
+
+      <h3>مثال مبسّط: اسم العيادة في الشريط الجانبي للطبيب</h3>
+      <ol>
+        <li>يوجد View Composer يجهّز متغيرات مشتركة مثل اسم العيادة من <code>ClinicSetting</code>.</li>
+        <li>عند رسم <code>layouts/doctor.blade.php</code> تظهر هذه القيم في الـ Sidebar/Navbar دون أن يعيد كل Controller كتابتها.</li>
+      </ol>
+
+      <h3>مثال أدق: فتح <code>/book</code></h3>
+      <div class="flow">
+        <div class="flow-step">Route اسمه <code>booking.index</code> → <code>PublicBookingController@index</code></div>
+        <div class="flow-step"><code>ClinicSettingsService::primaryDoctor()</code> يجلب أول <code>User</code></div>
+        <div class="flow-step"><code>ClinicSettingsService::get($doctor)</code> يقرأ أو ينشئ صف <code>clinic_settings</code></div>
+        <div class="flow-step"><code>ScheduleService::bookingWeeks($doctor)</code> يحسب أيام/أوقات هذا الأسبوع والأسبوع القادم</div>
+        <div class="flow-step"><code>WhatsAppService::normalizeNumber(...)</code> يجهّز الرقم لـ wa.me</div>
+        <div class="flow-step">Blade: <code>resources/views/booking/index.blade.php</code> يستقبل <code>$settings</code>, <code>$weeks</code>, <code>$whatsappNumber</code></div>
+        <div class="flow-step">Alpine.js في <code>resources/js/booking.js</code> يدير اختيار الأسبوع/اليوم/الوقت محلياً في المتصفح</div>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section id="write-flow">
+      <h2>8) مسار الكتابة: من النموذج إلى Database</h2>
+      <pre>Browser POST/PUT/DELETE
+  → Route (+ auth إن لزم)
+  → Form Request (Validation)
+  → Controller
+  → Action و/أو Service
+  → Model::create/update/delete  (SQL)
+  → Redirect + flash success</pre>
+      <p>الحقول داخل النموذج HTML يجب أن تطابق أسماء قواعد التحقق. مثال:</p>
+      <ul class="dense">
+        <li>حقل الاسم في الإعدادات: <code>name="clinic_name"</code></li>
+        <li>حقل واتساب في الإعدادات: <code>name="whatsapp"</code> ثم يُحوَّل داخل Request إلى <code>whatsapp_number</code> قبل الحفظ في الجدول.</li>
+        <li>أيام الجدول: <code>days[0][weekday]</code>, <code>days[0][is_open]</code>, <code>days[0][start_time]</code>…</li>
+      </ul>
+      <div class="note">
+        نماذج Blade غالباً تستخدم مكوّنات مثل <code>&lt;x-form.input&gt;</code> و <code>&lt;x-ui.button&gt;</code> لإبقاء الواجهة موحّدة وسهلة لكبار السن (أزرار كبيرة / RTL).
+      </div>
+    </section>
+
+    <!-- 9 -->
+    <section id="settings">
+      <h2>9) مثال كامل 1: إعدادات العيادة (Feature مكتملة)</h2>
+      <p>هذا أفضل مثال دراسي لأنه مكتمل من الواجهة حتى قاعدة البيانات مع اختبارات Pest.</p>
+
+      <h3>أ) عرض الصفحة (قراءة)</h3>
+      <table>
+        <thead><tr><th>العنصر</th><th>القيمة</th></tr></thead>
+        <tbody>
+          <tr><td>URI</td><td><code>GET /doctor/settings</code></td></tr>
+          <tr><td>Named Route</td><td><code>doctor.settings.index</code></td></tr>
+          <tr><td>Controller</td><td><code>ClinicSettingsController@edit</code></td></tr>
+          <tr><td>Service</td><td><code>ClinicSettingsService::get($doctor)</code></td></tr>
+          <tr><td>Model</td><td><code>ClinicSetting</code> (+ قراءة <code>User->name</code>)</td></tr>
+          <tr><td>View</td><td><code>resources/views/doctor/settings/index.blade.php</code></td></tr>
+        </tbody>
+      </table>
+      <p>إن لم يوجد صف إعدادات بعد، <code>firstOrCreate</code> ينشئه بقيم افتراضية من <code>config/clinic.php</code>.</p>
+
+      <h3>ب) حفظ التعديلات (كتابة)</h3>
+      <table>
+        <thead><tr><th>العنصر</th><th>القيمة</th></tr></thead>
+        <tbody>
+          <tr><td>URI</td><td><code>PUT /doctor/settings</code></td></tr>
+          <tr><td>Named Route</td><td><code>doctor.settings.update</code></td></tr>
+          <tr><td>Form</td><td><code>method="post"</code> + <code>@method('PUT')</code> + <code>@csrf</code></td></tr>
+          <tr><td>Form Request</td><td><code>UpdateClinicSettingsRequest</code></td></tr>
+          <tr><td>Action</td><td><code>UpdateClinicSettingsAction</code></td></tr>
+          <tr><td>Service</td><td><code>ClinicSettingsService::update</code></td></tr>
+          <tr><td>Models المتأثرة</td><td><code>User.name</code> و <code>ClinicSetting</code></td></tr>
+        </tbody>
+      </table>
+
+      <h4>تسلسل الحفظ حرفياً</h4>
+      <ol>
+        <li>المستخدم يغيّر اسم العيادة / التخصص / واتساب… ويضغط حفظ.</li>
+        <li><code>UpdateClinicSettingsRequest</code> يتحقق: الحقول المطلوبة، طول النصوص، صيغة الرقم.</li>
+        <li>Method <code>clinicData()</code> تنظّف الرقم إلى أرقام فقط وتسمّي المفتاح <code>whatsapp_number</code>.</li>
+        <li><code>UpdateClinicSettingsAction::handle</code> داخل Transaction:
+          <ul>
+            <li>يحدّث <code>users.name</code> من <code>doctor_name</code>.</li>
+            <li>يحدّث صف <code>clinic_settings</code>.</li>
+          </ul>
+        </li>
+        <li>Redirect إلى <code>doctor.settings.index</code> مع رسالة نجاح.</li>
+        <li>أي زيارة لاحقة لـ <code>/book</code> ستقرأ الاسم وواتساب الجديدين من Database وليس من القيم الوهمية.</li>
+      </ol>
+    </section>
+
+    <!-- 10 -->
+    <section id="schedule">
+      <h2>10) مثال كامل 2: إدارة الجدول (Feature مكتملة)</h2>
+
+      <h3>قراءة صفحة الجدول</h3>
+      <ul class="dense">
+        <li>Route: <code>doctor.schedule.index</code> → <code>GET /doctor/schedule</code></li>
+        <li>Controller: <code>ScheduleController@index</code></li>
+        <li>Service:
+          <code>getSettings</code>,
+          <code>ensureWorkingHours</code> (يضمن 7 أيام مغلقة افتراضياً),
+          <code>listHolidays</code>
+        </li>
+        <li>View: <code>doctor/schedule/index.blade.php</code></li>
+      </ul>
+
+      <h3>حفظ أيام/ساعات/مدة الموعد</h3>
+      <ul class="dense">
+        <li>Route: <code>doctor.schedule.update</code> → <code>PUT /doctor/schedule</code></li>
+        <li>Form Request: <code>UpdateScheduleRequest</code> (يتحقق من 7 أيام، أوقات البداية/النهاية، الغداء…)</li>
+        <li>Action: <code>UpdateScheduleAction</code></li>
+        <li>Service: <code>updateSettings</code> + <code>syncWorkingHours</code></li>
+        <li>Models: <code>ScheduleSetting</code>, <code>WorkingHour</code></li>
+      </ul>
+
+      <h3>إضافة/حذف إجازة</h3>
+      <table>
+        <thead><tr><th>العملية</th><th>Route Name</th><th>Method + URI</th><th>Model</th></tr></thead>
+        <tbody>
+          <tr><td>إضافة</td><td><code>doctor.schedule.holidays.store</code></td><td><code>POST /doctor/schedule/holidays</code></td><td><code>Holiday</code></td></tr>
+          <tr><td>حذف</td><td><code>doctor.schedule.holidays.destroy</code></td><td><code>DELETE /doctor/schedule/holidays/{holiday}</code></td><td><code>Holiday</code></td></tr>
+        </tbody>
+      </table>
+      <p>عند الحذف يتحقق الـ Controller أن <code>$holiday-&gt;user_id</code> يساوي الطبيب الحالي (بدل Policies في هذه المرحلة).</p>
+
+      <div class="warn">
+        حتى تظهر مواعيد في <code>/book</code> يجب أن يفتح الطبيب يوماً واحداً على الأقل من إدارة الجدول ويحفظ. بدون ذلك تظهر رسالة: «لا توجد مواعيد متاحة».
+      </div>
+    </section>
+
+    <!-- 11 -->
+    <section id="booking">
+      <h2>11) مثال كامل 3: صفحة الحجز العام <code>/book</code></h2>
+
+      <h3>ما الذي يُعرض؟</h3>
+      <ol>
+        <li>مقدمة العيادة من <code>ClinicSetting</code> + اسم الطبيب من <code>User</code>.</li>
+        <li>إن لم توجد أيام متاحة في هذا/الأسبوع القادم → مكوّن <code>x-booking.empty-state</code> فقط (بدون أزرار الأسابيع أو النموذج).</li>
+        <li>إن وُجدت مواعيد → خطوات Alpine:
+          أسبوع → يوم → وقت → بيانات مريض → ملخص → زر واتساب.
+        </li>
+      </ol>
+
+      <h3>من أين تأتي قائمة الأيام والأوقات؟</h3>
+      <p>ليست بيانات ثابتة في Blade. تُحسب في:</p>
+      <pre>ScheduleService::bookingWeeks($doctor)
+  → availableDaysInRange(...)
+  → availableSlots($doctor, $date)
+       يعتمد على WorkingHour + ScheduleSetting + Holiday + Appointment</pre>
+
+      <h3>هل يُحفظ الحجز حالياً في Database؟</h3>
+      <div class="warn">
+        مسار <code>booking.store</code> موجود لكنه <strong>Stub</strong> حالياً (لا يستدعي <code>BookingService::createPublic</code> بعد).
+        زر واتساب يفتح <code>https://wa.me/...</code> من المتصفح برسالة جاهزة (اسم + يوم + وقت).
+        حفظ الموعد كصف في جدول <code>appointments</code> هو الخطوة التالية المخططة في التطوير.
+      </div>
+
+      <h3>ملفات الواجهة ذات الصلة</h3>
+      <ul class="dense">
+        <li>Layout: <code>resources/views/layouts/booking.blade.php</code></li>
+        <li>الصفحة: <code>resources/views/booking/index.blade.php</code></li>
+        <li>مكوّنات: <code>resources/views/components/booking/*</code></li>
+        <li>JS: <code>resources/js/booking.js</code> (Alpine data: <code>bookingFlow</code>)</li>
+        <li>CSS entry: <code>resources/css/booking.css</code> + التوكنات من <code>app.css</code></li>
+      </ul>
+    </section>
+
+    <!-- 12 -->
+    <section id="whatsapp">
+      <h2>12) رقم واتساب والتحويل إلى wa.me</h2>
+      <ol>
+        <li>القيمة الافتراضية في الإعدادات: <code>config('clinic.whatsapp')</code> = <code>09594334213</code>.</li>
+        <li>عند إنشاء صف العيادة أول مرة تُنسخ إلى <code>clinic_settings.whatsapp_number</code>.</li>
+        <li>الطبيب يستطيع تغييرها من <code>/doctor/settings</code>.</li>
+        <li><code>WhatsAppService::normalizeNumber()</code> يحوّل الرقم المحلي إلى صيغة دولية بدون +:
+          <ul>
+            <li>سوري 11 خانة يبدأ بـ 09 ← يُسبَق بـ <code>963</code></li>
+            <li>سعودي 10 خانات يبدأ بـ 0 ← يُسبَق بـ <code>966</code></li>
+          </ul>
+        </li>
+        <li>الرابط النهائي يشبه: <code>https://wa.me/9639594334213?text=...</code></li>
+      </ol>
+    </section>
+
+    <!-- 13 -->
+    <section id="auth">
+      <h2>13) المصادقة Auth — كيف تدخل البيانات الحساسة؟</h2>
+      <ol>
+        <li>الطبيب يفتح <code>/login</code> (Named Route: <code>login</code>).</li>
+        <li><code>AuthenticatedSessionController</code> يتحقق عبر <code>LoginRequest</code> (مع حد محاولات).</li>
+        <li>عند النجاح تُنشأ Session وتربط المتصفح بالمستخدم <code>User</code>.</li>
+        <li>أي Route تحت <code>routes/doctor.php</code> محمي بـ Middleware <code>auth</code>.</li>
+        <li>إن زرت <code>/doctor/dashboard</code> بدون دخول → تحويل إلى صفحة Login.</li>
+        <li><code>POST /logout</code> ينهي الجلسة.</li>
+      </ol>
+      <div class="note">
+        بيانات الدخول المحلية الافتراضية (من Seeder): البريد <code>admin@gmail.com</code> — يمكن تغييرها عبر متغيرات البيئة.
+        لا توجد شاشة تسجيل عامة للمرضى أو لأطباء إضافيين.
+      </div>
+    </section>
+
+    <!-- 14 -->
+    <section id="stubs">
+      <h2>14) ما هو مكتمل وما هو Stub بعد؟</h2>
+      <table>
+        <thead><tr><th>الميزة</th><th>الواجهة</th><th>الكتابة إلى DB</th><th>Service</th></tr></thead>
+        <tbody>
+          <tr><td>إعدادات العيادة</td><td>نعم</td><td>نعم</td><td><code>ClinicSettingsService</code> مكتمل</td></tr>
+          <tr><td>إدارة الجدول + الإجازات</td><td>نعم</td><td>نعم</td><td><code>ScheduleService</code> مكتمل</td></tr>
+          <tr><td>عرض /book حسب الجدول</td><td>نعم</td><td>قراءة فقط + واتساب</td><td>يعتمد على Schedule + Clinic</td></tr>
+          <tr><td>حفظ حجز المريض كموعد</td><td>جزئي</td><td>لا بعد</td><td><code>BookingService::createPublic</code> Stub</td></tr>
+          <tr><td>الحجز الفوري للطبيب</td><td>نموذج</td><td>لا بعد</td><td><code>BookingService::createInstant</code> Stub</td></tr>
+          <tr><td>قائمة المواعيد / المرضى / التايملاين / الداشبورد</td><td>حالات فارغة</td><td>بانتظار الربط</td><td>Services أغلبها Stub للقوائم</td></tr>
+        </tbody>
+      </table>
+      <p>عندما ترى في الكود <code>throw new LogicException('Not implemented.')</code> فهذا يعني أن التوقيع جاهز لكن المنطق لم يُكتب بعد — وهذا مقصود لبناء ميزة واحدة في كل مرة.</p>
+    </section>
+
+    <!-- 15 -->
+    <section id="study">
+      <h2>15) خطة دراسة مقترحة (رتّبها هكذا)</h2>
+      <ol>
+        <li>اقرأ هذا الملف بالكامل مرة واحدة دون فتح الكود.</li>
+        <li>افتح <code>bootstrap/app.php</code> ثم ملفات <code>routes/*</code> وطابقها مع الجدول في القسم 5.</li>
+        <li>ادرس Feature إعدادات العيادة من النهاية للنهاية:
+          View → Controller → Form Request → Action → Service → Model → Migration.</li>
+        <li>ادرس Feature الجدول بنفس الأسلوب، ثم راقب أثرها على <code>/book</code>.</li>
+        <li>افتح <code>ScheduleService::availableSlots</code> واتبع الحساب سطراً بسطر بقلم وورقة لتاريخ واحد.</li>
+        <li>شغّل الاختبارات لترى السلوك الموثّق:
+          <code>php artisan test --compact --filter=ClinicSettings</code>
+          و
+          <code>--filter=Schedule</code>
+          و
+          <code>--filter=PublicBooking</code>
+        </li>
+        <li>ارسم بنفسك مخططاً على ورقة: «زر الحفظ → أي Route → أي جدول؟»</li>
+      </ol>
+
+      <h3>أوامر مفيدة أثناء الدراسة</h3>
+      <pre>php artisan route:list --except-vendor
+php artisan tinker
+php artisan test --compact
+vendor/bin/pint --dirty --format agent</pre>
+
+      <h3>خريطة ذهنية سريعة جداً</h3>
+      <pre>UI (Blade/Alpine)
+   ↕  HTTP (Route name)
+Controller (thin)
+   ↕
+FormRequest / Action / Service
+   ↕
+Eloquent Model
+   ↕
+Database Table</pre>
+    </section>
+
+    <footer>
+      <p>ملف دراسي للمشروع المحلي Doctors Bookings — عيادة الدكتور مصطفى بكرو.</p>
+      <p>المسار المقترح للملف: <code>docs/data-flow-guide-ar.html</code> — افتحه مباشرة في المتصفح.</p>
+    </footer>
+  </div>
+</body>
+</html>
