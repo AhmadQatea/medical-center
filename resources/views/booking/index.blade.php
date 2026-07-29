@@ -50,7 +50,11 @@
                     <section class="space-y-3 sticky bottom-0 z-10 -mx-4 bg-gradient-to-t from-background via-background to-transparent px-4 pb-2 pt-4 sm:static sm:mx-0 sm:bg-none sm:px-0 sm:pb-0 sm:pt-0" x-show="selectedTime" x-cloak>
                         <x-booking.step-label step="6" title="تأكيد الحجز" class="sm:flex hidden" />
                         <p class="text-sm text-foreground-muted" x-show="! canSubmit && ! submitting" x-cloak>
-                            أكمل البيانات المطلوبة لإرسال طلب الحجز
+                            <span x-show="missingFields.length === 0">أكمل البيانات المطلوبة لإرسال طلب الحجز</span>
+                            <span x-show="missingFields.length > 0">
+                                أكمل:
+                                <span class="font-semibold text-foreground" x-text="missingFields.join('، ')"></span>
+                            </span>
                         </p>
                         <button
                             type="submit"

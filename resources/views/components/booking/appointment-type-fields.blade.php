@@ -19,7 +19,7 @@
             x-model="{{ $typeModel }}"
             class="ds-control !min-h-16 !rounded-2xl !text-lg"
         >
-            <option value="" disabled selected>اختر نوع الموعد</option>
+            <option value="">اختر نوع الموعد</option>
             @foreach ($types as $type)
                 <option value="{{ $type->id ?? $type['id'] }}">
                     {{ $type->name ?? $type['name'] }}
