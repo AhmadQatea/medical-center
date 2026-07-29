@@ -6,12 +6,12 @@ use App\Services\ClinicSettingsService;
 use function Pest\Laravel\get;
 
 test('public booking page loads clinic branding from database', function () {
-    $doctor = User::factory()->create(['name' => 'د. مصطفى بكرو']);
+    $doctor = User::factory()->create(['name' => 'العيادة السنية التخصصية']);
     app(ClinicSettingsService::class)->get($doctor);
 
     get(route('booking.index'))
         ->assertOk()
-        ->assertSee('د. مصطفى بكرو')
+        ->assertSee('العيادة السنية التخصصية')
         ->assertSee(config('clinic.name'));
 });
 

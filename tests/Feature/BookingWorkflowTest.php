@@ -36,7 +36,7 @@ test('public booking stores pending appointment in database', function () {
 
     post(route('booking.store'), [
         'name' => 'أحمد علي',
-        'phone' => '+963959422413',
+        'phone' => '+963999123456',
         'date' => '2026-07-29',
         'start_time' => '09:00',
         'appointment_type_id' => $type->id,

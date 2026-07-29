@@ -18,12 +18,12 @@ class ClinicSettingFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'clinic_name' => 'عيادة الدكتور مصطفى بكرو',
+            'clinic_name' => 'العيادة السنية التخصصية',
             'specialty' => 'طبيب أسنان',
             'description' => 'ابتسامة أجمل تبدأ بثقة ورعاية احترافية.',
-            'city' => 'الرياض',
-            'address' => 'حي الياسمين، الرياض',
-            'whatsapp_number' => '963959422413',
+            'city' => null,
+            'address' => null,
+            'whatsapp_number' => '963999123456',
             'logo_path' => null,
             'photo_path' => null,
         ];

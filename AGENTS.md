@@ -10,8 +10,8 @@ Keep Laravel Boost guidelines (below) intact. Prefer this project section for pr
 **Name (concept):** Single-doctor dental appointment management system (not SaaS, not multi-tenant).
 
 **Clinic (current config / DB defaults):**
-- Clinic: `عيادة الدكتور مصطفى بكرو` (`config/clinic.php`)
-- Doctor display name: `د. مصطفى بكرو`
+- Clinic: `العيادة السنية التخصصية` (`config/clinic.php`)
+- Doctor display name: `العيادة السنية التخصصية` (no personal doctor branding)
 - Specialty: طبيب أسنان / Dentist
 - Locale UI: Arabic RTL (Cairo font)
 - Theme: Deep Burgundy `#6B1E2A`, Gold `#C9A84C`, warm white background
@@ -22,7 +22,7 @@ Keep Laravel Boost guidelines (below) intact. Prefer this project section for pr
 2. **Patient** — guest only. Books via public `/book`. No patient accounts.
 
 **Login (local seeder defaults):**
-- Email: `admin@gmail.com` (override with `DOCTOR_EMAIL` / `config('clinic.seed_doctor')`)
+- Email: `clinic@example.com` (override with `DOCTOR_EMAIL` / `config('clinic.seed_doctor')`)
 - Password: `admin123123` locally (override with `DOCTOR_PASSWORD`; **required** outside `local`/`testing`)
 - Login rate limit: 5 attempts (`LoginRequest` + route `throttle:5,1`)
 

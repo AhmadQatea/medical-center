@@ -1,32 +1,32 @@
 <?php
 
 /**
- * Clinic identity — Dr. Mustafa Bakro Dental Clinic
+ * Clinic identity — Specialized Dental Clinic
  */
 
 return [
 
-    'name' => 'عيادة الدكتور مصطفى بكرو',
+    'name' => 'العيادة السنية التخصصية',
 
-    'name_en' => 'Dr. Mustafa Bakro Dental Clinic',
+    'name_en' => 'Specialized Dental Clinic',
 
     'doctor' => [
-        'name' => 'د. مصطفى بكرو',
-        'name_en' => 'Dr. Mustafa Bakro',
+        'name' => 'العيادة السنية التخصصية',
+        'name_en' => 'Specialized Dental Clinic',
         'title' => 'طبيب أسنان',
         'specialty' => 'طبيب أسنان',
-        'initials' => 'مب',
+        'initials' => 'عس',
     ],
 
     'description' => 'ابتسامة أجمل تبدأ بثقة ورعاية احترافية.',
 
-    'city' => 'الرياض',
+    'city' => null,
 
-    'address' => 'حي الياسمين، الرياض',
+    'address' => null,
 
-    'whatsapp' => '963959422413',
+    'whatsapp' => '963999123456',
 
-    'email' => 'admin@gmail.com',
+    'email' => 'clinic@example.com',
 
     /*
     |--------------------------------------------------------------------------
@@ -37,7 +37,6 @@ return [
     | Syrian clinics should use Asia/Damascus.
     |
     */
-
     'timezone' => env('CLINIC_TIMEZONE', 'Asia/Damascus'),
 
     /*
@@ -47,8 +46,8 @@ return [
     */
 
     'seed_doctor' => [
-        'email' => env('DOCTOR_EMAIL', 'admin@gmail.com'),
-        'name' => env('DOCTOR_NAME', 'د. مصطفى بكرو'),
+        'email' => env('DOCTOR_EMAIL', 'clinic@example.com'),
+        'name' => env('DOCTOR_NAME', 'العيادة السنية التخصصية'),
         'password' => env('DOCTOR_PASSWORD'),
     ],
 

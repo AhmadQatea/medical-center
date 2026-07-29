@@ -41,13 +41,13 @@
             autocomplete="tel"
             inputmode="tel"
             dir="ltr"
-            placeholder="0959422413"
+            placeholder="0999123456"
             x-model="{{ $phoneModel }}"
             x-on:blur="formatPhone()"
             class="ds-control !min-h-16 !rounded-2xl !text-lg"
         />
         <p class="mt-1.5 text-xs leading-relaxed text-foreground-muted">
-            مثال: <span dir="ltr">0959422413</span> أو <span dir="ltr">+963959422413</span>
+            مثال: <span dir="ltr">0999123456</span> أو <span dir="ltr">+963999123456</span>
         </p>
         <p class="mt-1 text-sm font-medium text-danger" x-show="{{ $phoneModel }}.trim() && ! phoneValid" x-cloak>
             أدخل رقم موبايل سوري صحيح يبدأ بـ 09

@@ -61,7 +61,7 @@ test('qa public booking completes happy path', function () {
 
     post(route('booking.store'), qaBookingPayload($type, [
         'name' => 'أحمد QA',
-        'phone' => '+963959422413',
+        'phone' => '+963999123456',
         'date' => '2026-07-29',
         'start_time' => '09:00',
     ]))->assertRedirect(route('booking.success'));
@@ -220,7 +220,7 @@ test('qa instant booking creates confirmed appointment', function () {
     actingAs($doctor)
         ->post(route('doctor.bookings.store'), [
             'name' => 'مريض فوري',
-            'phone' => '+963959422413',
+            'phone' => '+963999123456',
             'date' => '2026-07-29',
             'start_time' => '10:00',
             'appointment_type_id' => $type->id,
@@ -360,7 +360,7 @@ test('qa patients index lists patients from bookings', function () {
     Patient::factory()->create([
         'user_id' => $doctor->id,
         'name' => 'مريض QA',
-        'phone' => '963959422413',
+        'phone' => '963999123456',
     ]);
 
     actingAs($doctor)
@@ -421,7 +421,7 @@ test('qa clinic settings page loads and updates', function () {
             'clinic_name' => 'عيادة QA',
             'doctor_name' => 'د. QA',
             'specialty' => 'طبيب أسنان',
-            'whatsapp' => '+963959422413',
+            'whatsapp' => '+963999123456',
         ])
         ->assertRedirect(route('doctor.settings.index'));
 
@@ -600,7 +600,7 @@ function qaBookingPayload(AppointmentType $type, array $overrides = []): array
 {
     return array_merge([
         'name' => 'مريض QA',
-        'phone' => '+963959422413',
+        'phone' => '+963999123456',
         'date' => '2026-07-29',
         'start_time' => '09:00',
         'appointment_type_id' => $type->id,

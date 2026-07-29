@@ -17,8 +17,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::query()->where('email', 'motafabakro@gmail.com')->delete();
-
         $password = config('clinic.seed_doctor.password');
 
         if ($password === null || $password === '') {

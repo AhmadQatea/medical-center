@@ -36,8 +36,8 @@ test('doctor can update clinic settings', function () {
 
     $response = actingAs($doctor)
         ->put(route('doctor.settings.update'), [
-            'clinic_name' => 'عيادة الدكتور مصطفى بكرو',
-            'doctor_name' => 'د. مصطفى بكرو',
+            'clinic_name' => 'العيادة السنية التخصصية',
+            'doctor_name' => 'العيادة السنية التخصصية',
             'specialty' => 'طبيب أسنان',
             'city' => 'جدة',
             'description' => 'وصف محدث',
@@ -52,11 +52,11 @@ test('doctor can update clinic settings', function () {
 
     $doctor->refresh();
 
-    expect($doctor->name)->toBe('د. مصطفى بكرو');
+    expect($doctor->name)->toBe('العيادة السنية التخصصية');
 
     assertDatabaseHas('clinic_settings', [
         'user_id' => $doctor->id,
-        'clinic_name' => 'عيادة الدكتور مصطفى بكرو',
+        'clinic_name' => 'العيادة السنية التخصصية',
         'specialty' => 'طبيب أسنان',
         'city' => 'جدة',
         'description' => 'وصف محدث',
@@ -71,16 +71,16 @@ test('clinic settings normalizes syrian whatsapp numbers on save', function () {
 
     actingAs($doctor)
         ->put(route('doctor.settings.update'), [
-            'clinic_name' => 'عيادة الدكتور مصطفى بكرو',
-            'doctor_name' => 'د. مصطفى بكرو',
+            'clinic_name' => 'العيادة السنية التخصصية',
+            'doctor_name' => 'العيادة السنية التخصصية',
             'specialty' => 'طبيب أسنان',
-            'whatsapp' => '+963959422413',
+            'whatsapp' => '+963999123456',
         ])
         ->assertSessionHasNoErrors();
 
     assertDatabaseHas('clinic_settings', [
         'user_id' => $doctor->id,
-        'whatsapp_number' => '963959422413',
+        'whatsapp_number' => '963999123456',
     ]);
 });
 

@@ -74,7 +74,7 @@ export function registerBookingFlow(Alpine) {
             }
 
             if (! this.phoneValid) {
-                missing.push('رقم واتساب بصيغة صحيحة (مثال: 0959422413 أو +963959422413)');
+                missing.push('رقم واتساب بصيغة صحيحة (مثال: 0999123456 أو +963999123456)');
             }
 
             if (! this.appointmentTypeId) {

@@ -47,7 +47,7 @@ test('confirm booking updates status and stays on details page', function () {
 });
 
 test('confirmed booking shows whatsapp button with generated message', function () {
-    $doctor = User::factory()->create(['name' => 'د. مصطفى بكرو']);
+    $doctor = User::factory()->create(['name' => 'العيادة السنية التخصصية']);
     app(ClinicSettingsService::class)->get($doctor);
 
     $type = AppointmentType::factory()->create([
@@ -64,7 +64,7 @@ test('confirmed booking shows whatsapp button with generated message', function 
 
     $appointment->patient->update([
         'name' => 'أحمد',
-        'phone' => '963959422413',
+        'phone' => '963999123456',
     ]);
 
     actingAs($doctor)
@@ -76,7 +76,7 @@ test('confirmed booking shows whatsapp button with generated message', function 
 
     $url = app(WhatsAppService::class)->patientConfirmationUrl($appointment->fresh());
 
-    expect($url)->toContain('https://wa.me/963959422413')
+    expect($url)->toContain('https://wa.me/963999123456')
         ->and(urldecode($url))->toContain('تم تأكيد موعدكم');
 });
 
@@ -112,7 +112,7 @@ test('doctor can complete and mark no show from confirmed booking', function () 
 test('generate booking confirmation message action builds arabic message', function () {
     $doctor = User::factory()->create();
     $settings = app(ClinicSettingsService::class)->get($doctor);
-    $settings->update(['clinic_name' => 'عيادة الدكتور مصطفى بكرو']);
+    $settings->update(['clinic_name' => 'العيادة السنية التخصصية']);
 
     $type = AppointmentType::factory()->create([
         'user_id' => $doctor->id,
@@ -133,7 +133,7 @@ test('generate booking confirmation message action builds arabic message', funct
 
     expect($message)
         ->toContain('السلام عليكم سارة')
-        ->toContain('عيادة الدكتور مصطفى بكرو')
+        ->toContain('العيادة السنية التخصصية')
         ->toContain('تنظيف')
         ->toContain('يرجى الحضور قبل الموعد بعشر دقائق');
 });
@@ -168,7 +168,7 @@ test('instant booking redirects to booking details page', function () {
     $response = actingAs($doctor)
         ->post(route('doctor.bookings.store'), [
             'name' => 'مريض تجريبي',
-            'phone' => '+963959422413',
+            'phone' => '+963999123456',
             'date' => '2026-07-29',
             'start_time' => $slot,
             'appointment_type_id' => $type->id,

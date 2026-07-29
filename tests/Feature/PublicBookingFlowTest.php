@@ -8,7 +8,7 @@ use Carbon\Carbon;
 use function Pest\Laravel\get;
 
 test('public booking shows empty state when no schedule is configured', function () {
-    $doctor = User::factory()->create(['name' => 'د. مصطفى بكرو']);
+    $doctor = User::factory()->create(['name' => 'العيادة السنية التخصصية']);
     app(ClinicSettingsService::class)->get($doctor);
     \App\Models\AppointmentType::factory()->create([
         'user_id' => $doctor->id,

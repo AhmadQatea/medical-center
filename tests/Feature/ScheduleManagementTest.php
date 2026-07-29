@@ -91,7 +91,7 @@ test('doctor can add and remove holidays', function () {
 });
 
 test('dashboard shows empty states instead of fake appointments', function () {
-    $doctor = User::factory()->create(['name' => 'د. مصطفى بكرو']);
+    $doctor = User::factory()->create(['name' => 'العيادة السنية التخصصية']);
 
     actingAs($doctor)
         ->get(route('doctor.dashboard'))
