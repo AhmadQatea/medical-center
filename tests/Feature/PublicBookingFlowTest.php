@@ -8,15 +8,12 @@ use Carbon\Carbon;
 use function Pest\Laravel\get;
 
 test('public booking shows empty state when no schedule is configured', function () {
-    $doctor = User::factory()->create(['name' => 'العيادة السنية التخصصية']);
+    $doctor = User::factory()->create(['name' => 'د. أحمد']);
+    $clinic = $doctor->clinic;
     app(ClinicSettingsService::class)->get($doctor);
-    \App\Models\AppointmentType::factory()->create([
-        'user_id' => $doctor->id,
-        'name' => 'معاينة',
-        'is_active' => true,
-    ]);
+    ensureFixedAppointmentTypes($doctor);
 
-    get(route('booking.index'))
+    get(route('booking.book', [$clinic, $doctor]))
         ->assertOk()
         ->assertSee('لا توجد مواعيد متاحة')
         ->assertDontSee('هذا الأسبوع')
@@ -27,12 +24,9 @@ test('public booking shows week steps when slots exist', function () {
     Carbon::setTestNow(Carbon::parse('2026-07-25 08:00:00')); // Saturday
 
     $doctor = User::factory()->create();
+    $clinic = $doctor->clinic;
     app(ClinicSettingsService::class)->get($doctor);
-    \App\Models\AppointmentType::factory()->create([
-        'user_id' => $doctor->id,
-        'name' => 'معاينة',
-        'is_active' => true,
-    ]);
+    ensureFixedAppointmentTypes($doctor);
 
     $schedule = app(ScheduleService::class);
     $schedule->getSettings($doctor);
@@ -43,7 +37,7 @@ test('public booking shows week steps when slots exist', function () {
     ]);
     $schedule->syncWorkingHours($doctor, weekdayPayload(openWeekdays: [6]));
 
-    get(route('booking.index'))
+    get(route('booking.book', [$clinic, $doctor]))
         ->assertOk()
         ->assertSee('هذا الأسبوع')
         ->assertSee('الأسبوع القادم')
@@ -52,14 +46,27 @@ test('public booking shows week steps when slots exist', function () {
         ->assertDontSee('حجز عبر واتساب');
 });
 
-test('public booking hides form when no appointment types exist', function () {
+test('public booking always provisions fixed appointment types', function () {
+    Carbon::setTestNow(Carbon::parse('2026-07-25 08:00:00'));
+
     $doctor = User::factory()->create();
+    $clinic = $doctor->clinic;
     app(ClinicSettingsService::class)->get($doctor);
 
-    get(route('booking.index'))
+    $schedule = app(ScheduleService::class);
+    $schedule->getSettings($doctor);
+    $schedule->updateSettings($doctor, [
+        'appointment_duration_minutes' => 30,
+        'break_duration_minutes' => 0,
+        'lunch_enabled' => false,
+    ]);
+    $schedule->syncWorkingHours($doctor, weekdayPayload(openWeekdays: [6]));
+
+    get(route('booking.book', [$clinic, $doctor]))
         ->assertOk()
-        ->assertSee('لا توجد أنواع مواعيد متاحة حالياً')
-        ->assertDontSee('تأكيد الحجز');
+        ->assertSee('معاينة')
+        ->assertSee('مراجعة')
+        ->assertSee('تأكيد الحجز');
 });
 
 /**

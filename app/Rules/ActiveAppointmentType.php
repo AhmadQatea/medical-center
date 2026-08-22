@@ -3,12 +3,16 @@
 namespace App\Rules;
 
 use App\Models\User;
+use App\Services\AppointmentTypeService;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 class ActiveAppointmentType implements ValidationRule
 {
-    public function __construct(private User $doctor) {}
+    public function __construct(
+        private User $doctor,
+        private ?AppointmentTypeService $appointmentTypes = null,
+    ) {}
 
     /**
      * @param  Closure(string, ?string=): void  $fail
@@ -20,6 +24,9 @@ class ActiveAppointmentType implements ValidationRule
 
             return;
         }
+
+        ($this->appointmentTypes ?? app(AppointmentTypeService::class))
+            ->ensureForDoctor($this->doctor);
 
         $exists = $this->doctor->appointmentTypes()
             ->whereKey((int) $value)

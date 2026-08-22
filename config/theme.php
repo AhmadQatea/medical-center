@@ -1,8 +1,8 @@
 <?php
 
 /**
- * Clinic Theme — Dental Medical Clinic
- * Deep burgundy · luxury gold · warm white · charcoal
+ * CarePoint Medical Center Theme
+ * Teal primary · clean clinical surfaces
  */
 
 return [
@@ -65,62 +65,57 @@ return [
     ],
 
     'default' => [
-        // Deep Burgundy
-        'primary' => '#6B1E2A',
-        'primary_soft' => '#F8F0F2',
-        'primary_muted' => '#D4A8B0',
-        'primary_hover' => '#541722',
+        // CarePoint Teal
+        'primary' => '#0D9488',
+        'primary_soft' => '#F0FDFA',
+        'primary_muted' => '#99F6E4',
+        'primary_hover' => '#0F766E',
         'primary_foreground' => '#FFFFFF',
 
-        // Charcoal secondary
-        'secondary' => '#1F1A17',
-        'secondary_soft' => '#F3F0EC',
-        'secondary_hover' => '#2C2622',
+        'secondary' => '#134E4A',
+        'secondary_soft' => '#ECFDF5',
+        'secondary_hover' => '#115E59',
         'secondary_foreground' => '#FFFFFF',
 
-        // Luxury Gold
-        'accent' => '#C9A84C',
-        'accent_soft' => '#FBF6E8',
-        'accent_foreground' => '#5C4A1A',
+        'accent' => '#14B8A6',
+        'accent_soft' => '#CCFBF1',
+        'accent_foreground' => '#134E4A',
 
-        // Light Linear-style sidebar
         'sidebar' => '#FFFFFF',
-        'sidebar_foreground' => '#3D3834',
-        'sidebar_muted' => '#F8F0F2',
-        'sidebar_border' => '#EAE6E0',
+        'sidebar_foreground' => '#475569',
+        'sidebar_muted' => '#F0FDFA',
+        'sidebar_border' => '#E2E8F0',
 
         'navbar' => '#FFFFFF',
-        'navbar_foreground' => '#1F1A17',
-        'navbar_border' => '#EAE6E0',
+        'navbar_foreground' => '#0F172A',
+        'navbar_border' => '#E2E8F0',
 
-        'success' => '#0F766E',
-        'success_soft' => '#F0FDFA',
-        'success_foreground' => '#134E4A',
+        'success' => '#059669',
+        'success_soft' => '#ECFDF5',
+        'success_foreground' => '#065F46',
 
-        'warning' => '#B45309',
+        'warning' => '#D97706',
         'warning_soft' => '#FFFBEB',
-        'warning_foreground' => '#78350F',
+        'warning_foreground' => '#92400E',
 
-        'danger' => '#B91C1C',
+        'danger' => '#DC2626',
         'danger_soft' => '#FEF2F2',
-        'danger_foreground' => '#7F1D1D',
+        'danger_foreground' => '#991B1B',
 
-        // Warm White · Pure White cards
-        'background' => '#F7F4EF',
+        'background' => '#F8FAFC',
         'surface' => '#FFFFFF',
-        'surface_muted' => '#FAF8F5',
-        'surface_subtle' => '#F0EDE8',
-        'border' => '#EAE6E0',
+        'surface_muted' => '#F8FAFC',
+        'surface_subtle' => '#F1F5F9',
+        'border' => '#E2E8F0',
 
-        // Dark Charcoal
-        'text' => '#1F1A17',
-        'text_muted' => '#6B6560',
-        'text_subtle' => '#9A948C',
+        'text' => '#0F172A',
+        'text_muted' => '#64748B',
+        'text_subtle' => '#94A3B8',
 
-        'overlay' => 'rgb(31 26 23 / 0.40)',
+        'overlay' => 'rgb(15 23 42 / 0.40)',
 
-        'radius' => '1rem',
-        'radius_lg' => '1.25rem',
+        'radius' => '0.75rem',
+        'radius_lg' => '1rem',
 
         'logo' => '',
         'logo_dark' => '',

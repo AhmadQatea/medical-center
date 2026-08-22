@@ -3,11 +3,14 @@
 @section('title', 'إدارة الجدول')
 
 @section('navbar-actions')
-    <x-ui.button type="submit" form="schedule-form" variant="primary" size="sm">حفظ</x-ui.button>
+    @if (($bookingContext['state'] ?? null) === \App\Services\AdminBookingContextService::STATE_READY)
+        <x-ui.button type="submit" form="schedule-form" variant="primary" size="sm">حفظ</x-ui.button>
+    @endif
 @endsection
 
 @section('content')
     @php
+        $ready = $bookingContext['state'] === \App\Services\AdminBookingContextService::STATE_READY;
         $formatTime = static function (?string $time): string {
             if ($time === null || $time === '') {
                 return '';
@@ -19,17 +22,32 @@
 
     <x-layout.page-header
         title="إدارة الجدول"
-        description="أيام العمل، الساعات، الاستراحات، والإجازات التي تتحكم بالحجز العام"
+        description="{{ $ready ? $bookingContext['clinic']->name.' — '.$bookingContext['doctor']->name : 'اختر العيادة والطبيب لإدارة الجدول' }}"
     />
 
-    <form
-        id="schedule-form"
-        method="post"
-        action="{{ route('doctor.schedule.update') }}"
-        class="ds-stack"
-    >
-        @csrf
-        @method('PUT')
+    <div class="ds-stack">
+        <x-doctor.clinic-doctor-context
+            :context="$bookingContext"
+            :action="route('doctor.schedule.index')"
+        />
+
+        @if ($ready)
+            @if (! $hasOpenDays)
+                <x-ui.alert variant="warning">
+                    لم يتم إعداد جدول مواعيد لهذا الطبيب. فعّل أيام العمل أدناه.
+                </x-ui.alert>
+            @endif
+
+            <form
+                id="schedule-form"
+                method="post"
+                action="{{ route('doctor.schedule.update') }}"
+                class="ds-stack"
+            >
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="clinic_id" value="{{ $bookingContext['clinic']->id }}">
+                <input type="hidden" name="doctor_id" value="{{ $bookingContext['doctor']->id }}">
 
         <x-ui.section title="أيام وساعات العمل" description="فعّل اليوم ثم حدد بداية ونهاية الدوام">
             <div class="space-y-3">
@@ -171,9 +189,9 @@
         <x-ui.button type="submit" variant="primary" size="xl" class="w-full sm:w-auto">
             حفظ إدارة الجدول
         </x-ui.button>
-    </form>
+            </form>
 
-    <div class="ds-stack mt-8">
+            <div class="ds-stack mt-8">
         <x-ui.section title="الإجازات" description="أيام مغلقة بالكامل عن الحجز">
             <x-ui.card>
                 <div class="ds-list-stack">
@@ -185,7 +203,7 @@
                                 </p>
                                 <p class="text-sm text-foreground-muted">
                                     <span dir="ltr">{{ $holiday->date->toDateString() }}</span>
-                                    — العيادة مغلقة
+                                    — مغلق للحجز
                                     @if ($holiday->note)
                                         · {{ $holiday->note }}
                                     @endif
@@ -200,13 +218,15 @@
                     @empty
                         <x-ui.empty-state
                             title="لا توجد إجازات"
-                            description="أضف يوماً مغلقاً عندما تكون العيادة غير متاحة للحجز."
+                            description="أضف يوماً مغلقاً عندما يكون الطبيب غير متاح للحجز."
                             class="!border-0 !bg-transparent !px-0 !py-4"
                         />
                     @endforelse
 
                     <form method="post" action="{{ route('doctor.schedule.holidays.store') }}" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
                         @csrf
+                        <input type="hidden" name="clinic_id" value="{{ $bookingContext['clinic']->id }}">
+                        <input type="hidden" name="doctor_id" value="{{ $bookingContext['doctor']->id }}">
                         <x-form.input name="date" type="date" label="تاريخ إجازة جديدة" dir="ltr" required class="!min-h-14" />
                         <x-form.input name="title" label="العنوان" placeholder="مثال: إجازة شخصية" class="!min-h-14" />
                         <div class="flex items-end">
@@ -222,5 +242,7 @@
                 حفظ الجدول
             </x-ui.button>
         </div>
+            </div>
+        @endif
     </div>
 @endsection

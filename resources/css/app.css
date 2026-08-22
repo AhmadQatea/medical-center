@@ -6,7 +6,7 @@
 
 /*
 |--------------------------------------------------------------------------
-| Design System — Premium Dental Clinic (Arabic RTL, mobile-first)
+| Design System — CarePoint Medical Center (Arabic RTL, mobile-first)
 |--------------------------------------------------------------------------
 */
 
@@ -59,13 +59,18 @@
         @apply mb-2 block text-sm font-semibold text-foreground;
     }
 
-    /* Navigation — Linear / Notion style, 44px+ targets */
+    /* Navigation — CarePoint sidebar */
     .ds-nav-link {
-        @apply flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-[15px] font-medium text-sidebar-foreground transition hover:bg-sidebar-muted hover:text-primary active:bg-sidebar-muted;
+        @apply relative flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-[15px] font-medium text-sidebar-foreground transition hover:bg-sidebar-muted hover:text-primary active:bg-sidebar-muted;
     }
 
     .ds-nav-link-active {
-        @apply bg-sidebar-muted font-semibold text-primary;
+        @apply bg-primary-soft font-semibold text-primary;
+    }
+
+    .ds-nav-link-active::before {
+        content: '';
+        @apply absolute inset-y-2 end-0 w-1 rounded-full bg-primary;
     }
 
     .ds-nav-icon {
@@ -94,8 +99,12 @@
     }
 
     /* Premium accents */
+    .ds-brand-mark {
+        @apply text-xl font-bold tracking-tight text-primary;
+    }
+
     .ds-gold-line {
-        @apply h-0.5 w-12 rounded-full bg-accent;
+        @apply h-0.5 w-12 rounded-full bg-primary-muted;
     }
 
     .ds-avatar {
@@ -144,5 +153,275 @@
 
     .ds-safe-bottom {
         padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0));
+    }
+
+    /* CarePoint data table */
+    .ds-table-wrap {
+        @apply overflow-x-auto rounded-ds-lg border border-border bg-surface shadow-soft;
+    }
+
+    .ds-table {
+        @apply w-full min-w-[720px] text-sm;
+    }
+
+    .ds-table thead {
+        @apply border-b border-border bg-surface-muted;
+    }
+
+    .ds-table th {
+        @apply px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-foreground-muted;
+    }
+
+    .ds-table td {
+        @apply border-b border-border px-4 py-4 align-middle text-foreground;
+    }
+
+    .ds-table tbody tr:last-child td {
+        @apply border-b-0;
+    }
+
+    .ds-table tbody tr:hover {
+        @apply bg-surface-subtle;
+    }
+
+    /* Section card with icon header */
+    .ds-section-card {
+        @apply rounded-ds-lg border border-border bg-surface p-5 shadow-soft sm:p-6;
+    }
+
+    .ds-section-card-header {
+        @apply mb-5 flex items-center gap-2 text-base font-bold text-foreground;
+    }
+
+    .ds-section-card-icon {
+        @apply flex h-9 w-9 items-center justify-center rounded-xl bg-primary-soft text-primary;
+    }
+
+    /* Subtle scrollbars — sidebar & main panels */
+    .ds-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-border) transparent;
+    }
+
+    .ds-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .ds-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .ds-scrollbar::-webkit-scrollbar-thumb {
+        background-color: var(--color-border);
+        border-radius: 9999px;
+    }
+
+    .ds-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: var(--color-text-subtle);
+    }
+
+    /* Public booking wizard — CarePoint template */
+    .bk-shell {
+        @apply flex min-h-[calc(100dvh-2rem)] flex-col;
+    }
+
+    .bk-header {
+        @apply sticky top-0 z-20 -mx-4 border-b px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6;
+        background-color: color-mix(in srgb, var(--color-background) 95%, transparent);
+        border-color: color-mix(in srgb, var(--color-border) 60%, transparent);
+    }
+
+    .bk-header-inner {
+        @apply flex items-center justify-center gap-2.5;
+    }
+
+    .bk-brand-title {
+        @apply text-lg font-bold tracking-tight;
+        color: var(--booking-primary, #00696f);
+    }
+
+    .bk-progress-segments {
+        @apply mt-3 grid grid-cols-6 gap-1.5;
+    }
+
+    .bk-progress-segment {
+        @apply h-2 rounded-full transition-colors duration-300;
+        background-color: var(--booking-muted-bar, #e6e8e9);
+    }
+
+    .bk-progress-segment.is-active {
+        background-color: var(--booking-primary, #00696f);
+    }
+
+    .bk-progress-segment.is-current {
+        background-color: var(--booking-primary-light, #1ca7b0);
+    }
+
+    .bk-page-title {
+        @apply text-center;
+    }
+
+    .bk-page-title h1 {
+        @apply text-xl font-bold text-foreground sm:text-2xl;
+    }
+
+    .bk-page-title p {
+        @apply mt-1 text-sm text-foreground-muted;
+    }
+
+    .bk-content {
+        @apply flex-1 py-5;
+    }
+
+    .bk-footer {
+        @apply sticky bottom-0 z-20 -mx-4 border-t px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6;
+        background-color: color-mix(in srgb, var(--color-background) 95%, transparent);
+        border-color: color-mix(in srgb, var(--color-border) 60%, transparent);
+        padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0));
+    }
+
+    .bk-footer-actions {
+        @apply flex items-center justify-between gap-3;
+    }
+
+    .bk-btn {
+        @apply inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-5 text-sm font-semibold transition ds-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-45;
+    }
+
+    .bk-btn-primary {
+        background-color: var(--booking-primary, #00696f);
+        @apply text-white shadow-soft hover:brightness-110;
+    }
+
+    .bk-btn-soft {
+        background-color: var(--booking-soft, #c6e5ea);
+        color: var(--booking-primary, #00696f);
+    }
+
+    .bk-btn-confirm {
+        background-color: var(--booking-confirm, #00a911);
+        @apply text-white shadow-soft hover:brightness-110;
+    }
+
+    .bk-btn-whatsapp {
+        @apply bg-[#25D366] text-white shadow-soft hover:brightness-110;
+    }
+
+    .bk-select-card {
+        @apply flex w-full items-center gap-4 rounded-xl border bg-surface px-4 py-4 text-start transition ds-press;
+        border-color: var(--booking-card-border, #bcc9ca);
+        min-height: 5.5625rem;
+    }
+
+    .bk-select-card:hover {
+        border-color: var(--booking-primary-light, #1ca7b0);
+        background-color: var(--booking-surface, #f8fafb);
+    }
+
+    .bk-select-card.is-selected {
+        border-color: var(--booking-primary, #00696f);
+        @apply bg-primary-soft shadow-soft;
+    }
+
+    .bk-select-card-icon {
+        @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-full;
+        background-color: var(--booking-soft, #c6e5ea);
+        color: var(--booking-primary, #00696f);
+    }
+
+    .bk-select-card-body {
+        @apply min-w-0 flex-1;
+    }
+
+    .bk-select-card-title {
+        @apply text-base font-bold text-foreground;
+    }
+
+    .bk-select-card-desc {
+        @apply mt-0.5 text-sm text-foreground-muted;
+    }
+
+    .bk-select-card-check {
+        @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 bg-surface transition;
+        border-color: var(--booking-card-border, #bcc9ca);
+    }
+
+    .bk-select-card.is-selected .bk-select-card-check {
+        border-color: var(--booking-primary, #00696f);
+        background-color: var(--booking-primary, #00696f);
+        @apply text-white;
+    }
+
+    .bk-select-card-check svg {
+        @apply hidden;
+    }
+
+    .bk-select-card.is-selected .bk-select-card-check svg {
+        @apply block;
+    }
+
+    .bk-panel {
+        @apply rounded-xl border bg-surface p-4;
+        border-color: var(--booking-card-border, #bcc9ca);
+    }
+
+    .bk-time-slot {
+        @apply flex min-h-11 items-center justify-center rounded-lg border px-3 text-sm font-semibold transition ds-press;
+        border-color: var(--booking-muted-bar, #e6e8e9);
+    }
+
+    .bk-time-slot.is-selected {
+        background-color: var(--booking-primary-light, #1ca7b0);
+        @apply border-transparent text-white shadow-soft;
+    }
+
+    .bk-day-chip {
+        @apply flex min-h-16 flex-col items-center justify-center rounded-xl border px-3 py-2 text-center transition ds-press;
+        border-color: var(--booking-card-border, #bcc9ca);
+    }
+
+    .bk-day-chip.is-selected {
+        border-color: var(--booking-primary, #00696f);
+        @apply bg-primary-soft;
+    }
+
+    .bk-review-card {
+        @apply space-y-0 overflow-hidden rounded-lg bg-[#f2f4f5] p-0;
+    }
+
+    .bk-review-row {
+        @apply flex items-start justify-between gap-4 border-b px-4 py-3.5 last:border-0;
+        border-color: color-mix(in srgb, var(--color-border) 50%, transparent);
+    }
+
+    .bk-review-label {
+        @apply shrink-0 text-sm text-foreground-muted;
+    }
+
+    .bk-review-value {
+        @apply text-end text-sm font-semibold text-foreground;
+    }
+
+    .bk-success-card {
+        @apply overflow-hidden rounded-xl border bg-surface shadow-soft-md;
+        border-color: #e1e3e4;
+    }
+
+    .bk-success-icon {
+        @apply mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-[#c6eacb] text-success;
+    }
+
+    .bk-context-chip {
+        @apply rounded-lg border px-3 py-2 text-xs;
+        border-color: var(--booking-card-border, #bcc9ca);
+        background-color: var(--booking-surface, #f8fafb);
+    }
+
+    .bk-context-chip dt {
+        @apply text-foreground-muted;
+    }
+
+    .bk-context-chip dd {
+        @apply mt-0.5 font-semibold text-foreground;
     }
 }

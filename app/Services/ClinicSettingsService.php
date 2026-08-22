@@ -4,9 +4,10 @@ namespace App\Services;
 
 use App\Models\ClinicSetting;
 use App\Models\User;
+use App\Support\BookingCache;
 
 /**
- * Manages clinic identity used by Clinic Settings and the public booking page.
+ * Manages public booking profile settings for a doctor (department display + contact).
  */
 class ClinicSettingsService
 {
@@ -15,9 +16,13 @@ class ClinicSettingsService
      */
     public function get(User $doctor): ClinicSetting
     {
-        return $doctor->clinicSetting()->firstOrCreate(
-            [],
-            $this->defaultAttributes(),
+        return cache()->remember(
+            BookingCache::clinicSettingsKey((int) $doctor->id),
+            BookingCache::CLINIC_SETTINGS_TTL,
+            fn (): ClinicSetting => $doctor->clinicSetting()->firstOrCreate(
+                [],
+                $this->defaultAttributesFor($doctor),
+            ),
         );
     }
 
@@ -30,7 +35,7 @@ class ClinicSettingsService
     }
 
     /**
-     * Resolve the single-clinic doctor (first authenticated clinic owner).
+     * Resolve the first admin/doctor account (legacy helper).
      */
     public function primaryDoctor(): ?User
     {
@@ -38,7 +43,7 @@ class ClinicSettingsService
     }
 
     /**
-     * Update clinic name, specialty, contact, and media paths.
+     * Update public booking display fields and contact info.
      *
      * @param  array{
      *     clinic_name?: string,
@@ -53,10 +58,15 @@ class ClinicSettingsService
      */
     public function update(User $doctor, array $data): ClinicSetting
     {
-        $settings = $this->get($doctor);
+        $settings = $doctor->clinicSetting()->firstOrCreate(
+            [],
+            $this->defaultAttributesFor($doctor),
+        );
 
         $settings->fill($data);
         $settings->save();
+
+        BookingCache::forgetClinicSettings((int) $doctor->id);
 
         return $settings->refresh();
     }
@@ -64,15 +74,19 @@ class ClinicSettingsService
     /**
      * @return array<string, mixed>
      */
-    private function defaultAttributes(): array
+    private function defaultAttributesFor(User $doctor): array
     {
+        $department = $doctor->clinic;
+
         return [
-            'clinic_name' => (string) config('clinic.name'),
-            'specialty' => (string) config('clinic.doctor.specialty', 'طبيب أسنان'),
-            'description' => config('clinic.description'),
-            'city' => config('clinic.city'),
-            'address' => config('clinic.address'),
-            'whatsapp_number' => (string) config('clinic.whatsapp'),
+            'clinic_name' => $department?->name ?? (string) config('clinic.default_department.name'),
+            'specialty' => $doctor->specialty
+                ?? $department?->specialty
+                ?? (string) config('clinic.default_department.specialty'),
+            'description' => $department?->description ?? config('clinic.medical_center.description'),
+            'city' => config('clinic.medical_center.city'),
+            'address' => config('clinic.medical_center.address'),
+            'whatsapp_number' => (string) config('clinic.medical_center.whatsapp'),
             'logo_path' => null,
             'photo_path' => null,
         ];

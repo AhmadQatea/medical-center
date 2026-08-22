@@ -2,12 +2,15 @@
 
 namespace App\Http\Requests\Doctor;
 
+use App\Http\Requests\Doctor\Concerns\ResolvesAdminBookingContext;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 class UpdateScheduleRequest extends FormRequest
 {
+    use ResolvesAdminBookingContext;
+
     public function authorize(): bool
     {
         return true;
@@ -19,6 +22,8 @@ class UpdateScheduleRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'clinic_id' => ['nullable', 'integer', 'exists:clinics,id'],
+            'doctor_id' => ['nullable', 'integer', 'exists:users,id'],
             'appointment_duration_minutes' => ['required', 'integer', 'in:15,20,30,45,60'],
             'break_duration_minutes' => ['required', 'integer', 'in:0,5,10,15'],
             'lunch_enabled' => ['sometimes', 'boolean'],
@@ -49,6 +54,18 @@ class UpdateScheduleRequest extends FormRequest
 
     public function withValidator(Validator $validator): void
     {
+        $validator->after(function (Validator $validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            try {
+                $this->targetDoctor();
+            } catch (\Throwable) {
+                $validator->errors()->add('doctor_id', 'يرجى اختيار العيادة والطبيب قبل حفظ الجدول.');
+            }
+        });
+
         $validator->after(function (Validator $validator): void {
             /** @var array<int, array{weekday?: int, is_open?: mixed, start_time?: string|null, end_time?: string|null}> $days */
             $days = $this->input('days', []);

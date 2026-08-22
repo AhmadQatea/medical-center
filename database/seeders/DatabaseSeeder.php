@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
+use App\Models\Clinic;
 use App\Models\User;
 use App\Services\ClinicSettingsService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -27,17 +29,36 @@ class DatabaseSeeder extends Seeder
             $password = 'admin123123';
         }
 
-        $doctor = User::query()->updateOrCreate(
+        /** @var array{name: string, slug: string, specialty: string, description: string|null} $department */
+        $department = config('clinic.default_department');
+
+        $clinic = Clinic::query()->firstOrCreate(
+            ['slug' => $department['slug']],
+            [
+                'name' => $department['name'],
+                'description' => $department['description'],
+                'specialty' => $department['specialty'],
+                'is_active' => true,
+                'display_order' => 0,
+            ],
+        );
+
+        $admin = User::query()->updateOrCreate(
             ['email' => (string) config('clinic.seed_doctor.email')],
             [
                 'name' => (string) config('clinic.seed_doctor.name'),
                 'password' => $password,
                 'email_verified_at' => now(),
+                'role' => UserRole::Admin,
+                'clinic_id' => $clinic->id,
+                'is_active' => true,
+                'specialty' => $department['specialty'],
+                'display_order' => 0,
             ],
         );
 
-        app(ClinicSettingsService::class)->get($doctor);
+        app(ClinicSettingsService::class)->get($admin);
 
-        $this->call(AppointmentTypeSeeder::class, false, ['doctor' => $doctor]);
+        $this->call(AppointmentTypeSeeder::class, false, ['doctor' => $admin]);
     }
 }

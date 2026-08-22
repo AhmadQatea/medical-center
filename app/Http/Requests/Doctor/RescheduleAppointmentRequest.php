@@ -13,10 +13,18 @@ class RescheduleAppointmentRequest extends FormRequest
     public function authorize(): bool
     {
         $appointment = $this->route('appointment');
+        $user = $this->user();
 
-        return $appointment instanceof Appointment
-            && (int) $appointment->user_id === (int) $this->user()->id
-            && $appointment->status->isEditable();
+        if (! $appointment instanceof Appointment || $user === null) {
+            return false;
+        }
+
+        if (! $appointment->status->isEditable()) {
+            return false;
+        }
+
+        return $user->isAdmin()
+            || (int) $appointment->user_id === (int) $user->id;
     }
 
     /**
@@ -26,13 +34,14 @@ class RescheduleAppointmentRequest extends FormRequest
     {
         /** @var Appointment $appointment */
         $appointment = $this->route('appointment');
+        $doctor = $appointment->user ?? $this->user();
 
         return [
-            'date' => ['required', 'date', new ValidBookingDate()],
+            'date' => ['required', 'date', new ValidBookingDate],
             'start_time' => [
                 'required',
                 'date_format:H:i',
-                new ValidBookableSlot($this->user(), $appointment->id),
+                new ValidBookableSlot($doctor, $appointment->id),
             ],
         ];
     }

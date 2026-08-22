@@ -7,26 +7,28 @@ Keep Laravel Boost guidelines (below) intact. Prefer this project section for pr
 
 ## Product overview
 
-**Name (concept):** Single-doctor dental appointment management system (not SaaS, not multi-tenant).
+**Name (concept):** Multi-clinic medical center appointment management (single deployment, not SaaS multi-tenant).
 
-**Clinic (current config / DB defaults):**
-- Clinic: `العيادة السنية التخصصية` (`config/clinic.php`)
-- Doctor display name: `العيادة السنية التخصصية` (no personal doctor branding)
-- Specialty: طبيب أسنان / Dentist
+**Medical center (org identity / `config/clinic.php`):**
+- Center: `المركز الطبي التخصصي` (`clinic.medical_center.name`)
+- Brand: `CarePoint` (`clinic.brand.name`)
+- Default seeded department: `عيادة الأسنان` (`clinic.default_department.*`)
 - Locale UI: Arabic RTL (Cairo font)
-- Theme: Deep Burgundy `#6B1E2A`, Gold `#C9A84C`, warm white background
+- Theme: CarePoint tokens (`config/theme.php`, `resources/css/themes/tokens.css`)
 - Timezone: `Asia/Damascus` (`APP_TIMEZONE`, `CLINIC_TIMEZONE`)
 
 **Actors:**
-1. **Doctor** — one authenticated account (Breeze login). Manages dashboard, bookings, patients, schedule, timeline, settings, profile, appointment types.
-2. **Patient** — guest only. Books via public `/book`. No patient accounts.
+1. **Admin** — authenticated Breeze account. Manages center-wide dashboard, clinics, doctors, bookings context, settings.
+2. **Doctors** — database records (no login). Each belongs to a clinic; has schedule + public booking profile.
+3. **Patient** — guest only. Books via public `/book` (clinic → doctor → slot flow). No patient accounts.
 
 **Login (local seeder defaults):**
 - Email: `clinic@example.com` (override with `DOCTOR_EMAIL` / `config('clinic.seed_doctor')`)
+- Name: `مدير المركز` (admin role)
 - Password: `admin123123` locally (override with `DOCTOR_PASSWORD`; **required** outside `local`/`testing`)
 - Login rate limit: 5 attempts (`LoginRequest` + route `throttle:5,1`)
 
-**Public registration:** disabled. Single seeded doctor only.
+**Public registration:** disabled. Admin account seeded locally; doctors managed in DB.
 
 **Remote:** [AhmadQatea/d.mostafaBakro](https://github.com/AhmadQatea/d.mostafaBakro)
 

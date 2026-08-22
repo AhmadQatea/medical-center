@@ -1,96 +1,127 @@
 @extends('layouts.doctor')
 
-@section('title', 'حجز فوري')
+@section('title', 'إضافة حجز يدوي')
 
 @section('content')
+    @php
+        $ready = $bookingContext['state'] === \App\Services\AdminBookingContextService::STATE_READY;
+        $contextQuery = app(\App\Services\AdminBookingContextService::class)->queryParams(
+            $bookingContext['clinic'] ?? null,
+            $bookingContext['doctor'] ?? null,
+        );
+    @endphp
+
     <x-layout.page-header
-        title="حجز فوري"
-        description="اختر الموعد ثم أدخل بيانات المريض"
+        title="إضافة حجز يدوي"
+        description="{{ $ready ? $bookingContext['clinic']->name.' — '.$bookingContext['doctor']->name : 'قم بإدخال بيانات المريض واختيار الموعد المناسب' }}"
     />
 
-    <div class="mx-auto max-w-xl">
-        @if ($appointmentTypes->isEmpty())
-            <x-ui.empty-state
-                title="لا توجد أنواع مواعيد متاحة"
-                description="أنشئ أنواع مواعيد نشطة قبل إنشاء حجز فوري."
-                icon="tag"
-            >
-                <x-ui.button href="{{ route('doctor.appointment-types.create') }}" variant="soft" size="sm">
-                    إنشاء نوع موعد
-                </x-ui.button>
-            </x-ui.empty-state>
-        @elseif (! $weeks['has_availability'])
-            <x-booking.empty-state
-                title="لا توجد مواعيد متاحة"
-                description="لا توجد أوقات متاحة حالياً. راجع إدارة الجدول أو جرّب الأسبوع القادم."
-            >
-                <x-ui.button href="{{ route('doctor.schedule.index') }}" variant="soft" size="sm">
-                    إدارة الجدول
-                </x-ui.button>
-            </x-booking.empty-state>
-        @else
-            <form
-                method="post"
-                action="{{ route('doctor.bookings.store') }}"
-                class="space-y-7"
-                x-data="bookingFlow(@js($weeks), @js($appointmentTypes), { defaultStatus: @js(old('status', 'confirmed')), requireStatus: true })"
-                x-on:submit="return onSubmit()"
-            >
-                @csrf
+    <div class="mx-auto max-w-3xl ds-stack">
+        <x-doctor.clinic-doctor-context
+            :context="$bookingContext"
+            :action="route('doctor.bookings.instant')"
+        />
 
-                <input type="hidden" name="date" x-model="selectedDate">
-                <input type="hidden" name="start_time" x-model="selectedTime">
+        @if ($ready)
+            @if (! $weeks['has_availability'])
+                <x-booking.empty-state
+                    title="لا توجد مواعيد متاحة"
+                    description="لا توجد أوقات متاحة حالياً. راجع إدارة الجدول أو جرّب الأسبوع القادم."
+                >
+                    <x-ui.button href="{{ route('doctor.schedule.index', $contextQuery) }}" variant="soft" size="sm">
+                        إدارة الجدول
+                    </x-ui.button>
+                </x-booking.empty-state>
+            @else
+                <form
+                    method="post"
+                    action="{{ route('doctor.bookings.store') }}"
+                    class="space-y-6"
+                    x-data="bookingFlow(@js($weeks), @js($appointmentTypes), {
+                        defaultStatus: @js(old('status', 'confirmed')),
+                        requireStatus: true,
+                        initialName: @js(old('name', '')),
+                        initialPhone: @js(old('phone', '')),
+                        initialAppointmentTypeId: @js(old('appointment_type_id', '')),
+                    })"
+                    x-on:submit="onSubmit($event)"
+                >
+                    @csrf
+                    <input type="hidden" name="clinic_id" value="{{ $bookingContext['clinic']->id }}">
+                    <input type="hidden" name="doctor_id" value="{{ $bookingContext['doctor']->id }}">
+                    <input type="hidden" name="date" x-model="selectedDate">
+                    <input type="hidden" name="start_time" x-model="selectedTime">
 
-                <x-booking.schedule-picker />
+                    <div class="ds-section-card">
+                        <div class="ds-section-card-header">
+                            <span class="ds-section-card-icon">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                                </svg>
+                            </span>
+                            <span>بيانات المريض</span>
+                        </div>
 
-                <section class="space-y-4" x-show="selectedTime" x-transition x-cloak>
-                    <x-booking.step-label step="4" title="بيانات المريض" />
-                    <x-ui.card>
-                        <div class="space-y-4">
+                        <div class="grid gap-4 sm:grid-cols-2">
                             <x-booking.guest-fields
                                 name-label="اسم المريض"
                                 name-placeholder="الاسم الكامل"
                             />
+                        </div>
+                    </div>
+
+                    <div class="ds-section-card">
+                        <div class="ds-section-card-header">
+                            <span class="ds-section-card-icon">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                                </svg>
+                            </span>
+                            <span>تفاصيل الحجز</span>
+                        </div>
+
+                        <div class="space-y-6">
                             <x-booking.appointment-type-fields :types="$appointmentTypes" />
-                            <x-form.select name="status" label="الحالة" x-model="status" class="!min-h-16 !rounded-2xl !text-lg">
+
+                            <x-form.select name="status" label="حالة الحجز" x-model="status">
                                 <option value="confirmed">مؤكد</option>
                                 <option value="pending">قيد الانتظار</option>
                             </x-form.select>
+
+                            <div>
+                                <x-booking.step-label step="1" title="التاريخ والوقت" />
+                                <div class="mt-4">
+                                    <x-booking.schedule-picker />
+                                </div>
+                            </div>
                         </div>
-                    </x-ui.card>
-                </section>
+                    </div>
 
-                <section class="space-y-3" x-show="canSubmit || submitting" x-transition x-cloak>
-                    <x-booking.step-label step="5" title="ملخص الموعد" />
-                    <x-booking.summary />
-                </section>
+                    <section class="space-y-3" x-show="canSubmit || submitting" x-transition x-cloak>
+                        <x-booking.step-label step="2" title="ملخص الموعد" />
+                        <x-booking.summary />
+                    </section>
 
-                <section class="space-y-3 sticky bottom-0 z-10 -mx-4 bg-gradient-to-t from-background via-background to-transparent px-4 pb-2 pt-4 sm:static sm:mx-0 sm:bg-none sm:px-0 sm:pb-0 sm:pt-0" x-show="selectedTime" x-cloak>
-                    <x-booking.step-label step="6" title="إنشاء الموعد" class="hidden sm:flex" />
-                    <p class="text-sm text-foreground-muted" x-show="! canSubmit && ! submitting" x-cloak>
-                        <span x-show="missingFields.length === 0">أكمل البيانات المطلوبة لإنشاء الموعد</span>
-                        <span x-show="missingFields.length > 0">
-                            أكمل:
-                            <span class="font-semibold text-foreground" x-text="missingFields.join('، ')"></span>
-                        </span>
-                    </p>
-                    <button
-                        type="submit"
-                        class="inline-flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl bg-primary px-8 text-lg font-semibold text-primary-foreground shadow-soft transition ds-press hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-muted focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                        x-bind:disabled="! canSubmit"
-                    >
-                        <template x-if="submitting">
-                            <span class="inline-flex items-center gap-2">
-                                <span class="ds-spinner" aria-hidden="true"></span>
-                                جاري إنشاء الموعد…
-                            </span>
-                        </template>
-                        <template x-if="! submitting">
-                            <span>إنشاء الموعد</span>
-                        </template>
-                    </button>
-                </section>
-            </form>
+                    <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <x-ui.button href="{{ route('doctor.bookings.index', $contextQuery) }}" variant="ghost" size="lg" class="w-full sm:w-auto">
+                            إلغاء
+                        </x-ui.button>
+                        <x-ui.button
+                            type="submit"
+                            variant="primary"
+                            size="lg"
+                            class="w-full sm:w-auto"
+                            x-bind:disabled="!canSubmit"
+                            x-bind:loading="submitting"
+                        >
+                            تأكيد الحجز
+                        </x-ui.button>
+                    </div>
+                </form>
+            @endif
         @endif
     </div>
+@endsection
+
+@section('navbar-actions')
 @endsection

@@ -3,38 +3,79 @@
 @section('title', 'تم الحجز')
 
 @section('content')
-    <div class="space-y-6 py-6 text-center" role="status">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-soft text-success shadow-soft" aria-hidden="true">
-            <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
+    <x-booking.shell title="نجاح الحجز">
+        <div class="bk-success-card mx-auto max-w-sm p-6 text-center" role="status">
+            <div class="bk-success-icon" aria-hidden="true">
+                <svg class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+            </div>
+
+            <div class="mt-5 space-y-2">
+                <h1 class="text-xl font-bold text-foreground">تم إرسال طلب الحجز بنجاح</h1>
+                <p class="text-sm leading-relaxed text-foreground-muted">
+                    سيتم مراجعة طلبك من قبل الطبيب.
+                    يمكنك أيضاً إرسال تفاصيل الحجز مباشرة عبر واتساب.
+                </p>
+            </div>
+
+            <div class="bk-review-card mt-6 text-start">
+                <div class="bk-review-row">
+                    <span class="bk-review-label">المركز</span>
+                    <span class="bk-review-value">{{ $medicalCenterName ?? config('clinic.medical_center.name') }}</span>
+                </div>
+                <div class="bk-review-row">
+                    <span class="bk-review-label">العيادة</span>
+                    <span class="bk-review-value">{{ $clinic?->name ?? $settings?->clinic_name ?? '—' }}</span>
+                </div>
+                <div class="bk-review-row">
+                    <span class="bk-review-label">الطبيب</span>
+                    <span class="bk-review-value">{{ $doctor?->name ?? '—' }}</span>
+                </div>
+                @if ($appointment)
+                    <div class="bk-review-row">
+                        <span class="bk-review-label">المريض</span>
+                        <span class="bk-review-value">{{ $appointment->patient?->name ?? '—' }}</span>
+                    </div>
+                    <div class="bk-review-row">
+                        <span class="bk-review-label">التاريخ</span>
+                        <span class="bk-review-value">{{ $appointment->date?->locale('ar')->translatedFormat('l j F Y') ?? '—' }}</span>
+                    </div>
+                    <div class="bk-review-row">
+                        <span class="bk-review-label">الوقت</span>
+                        <span class="bk-review-value">@arabicTime($appointment->start_time)</span>
+                    </div>
+                    <div class="bk-review-row">
+                        <span class="bk-review-label">نوع الموعد</span>
+                        <span class="bk-review-value">{{ $appointment->typeLabel() }}</span>
+                    </div>
+                @endif
+            </div>
         </div>
 
-        <div class="space-y-3">
-            <h1 class="text-2xl font-bold text-foreground">تم إرسال طلب الحجز بنجاح</h1>
-            <p class="mx-auto max-w-md text-base leading-relaxed text-foreground-muted">
-                سيتم مراجعة طلبك من قبل الطبيب.
-                <br>
-                ستصلك رسالة تأكيد عبر واتساب بعد اعتماد الموعد.
-            </p>
-            <div class="ds-gold-line mx-auto mt-3" aria-hidden="true"></div>
-        </div>
-
-        <x-ui.card class="text-start !shadow-soft-md">
-            <dl class="space-y-0">
-                <div class="ds-detail-row">
-                    <dt class="ds-detail-label">العيادة</dt>
-                    <dd class="ds-detail-value">{{ $settings?->clinic_name ?? config('clinic.name') }}</dd>
-                </div>
-                <div class="ds-detail-row">
-                    <dt class="ds-detail-label">الطبيب</dt>
-                    <dd class="ds-detail-value">{{ $doctor?->name ?? config('clinic.doctor.name') }}</dd>
-                </div>
-            </dl>
-        </x-ui.card>
-
-        <x-ui.button href="{{ route('booking.index') }}" variant="primary" size="xl" class="w-full">
-            العودة للحجز
-        </x-ui.button>
-    </div>
+        <x-slot:footer>
+            <x-booking.footer-actions>
+                <x-slot:next>
+                    <a href="{{ route('booking.index') }}" class="bk-btn bk-btn-primary">
+                        العودة للحجز
+                    </a>
+                </x-slot:next>
+                @if ($whatsappUrl)
+                    <x-slot:back>
+                        <a
+                            href="{{ $whatsappUrl }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="bk-btn bk-btn-whatsapp inline-flex items-center justify-center gap-2"
+                        >
+                            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                            </svg>
+                            إرسال الحجز عبر واتساب
+                        </a>
+                    </x-slot:back>
+                @endif
+            </x-booking.footer-actions>
+        </x-slot:footer>
+    </x-booking.shell>
 @endsection

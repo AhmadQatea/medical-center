@@ -11,10 +11,10 @@
 ])
 
 @php
-    $clinic = $clinic ?? config('clinic.name');
-    $doctor = $doctor ?? config('clinic.doctor.name');
-    $specialty = $specialty ?? config('clinic.doctor.specialty');
-    $description = $description ?? config('clinic.description');
+    $clinic = $clinic ?? config('clinic.default_department.name');
+    $doctor = $doctor ?? '—';
+    $specialty = $specialty ?? config('clinic.default_department.specialty');
+    $description = $description ?? config('clinic.medical_center.description');
     $initials = $initials ?? \App\Support\Name::initials((string) $doctor);
 @endphp
 

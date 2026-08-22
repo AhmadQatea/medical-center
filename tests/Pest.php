@@ -1,6 +1,10 @@
 <?php
 
+use App\Models\AppointmentType;
+use App\Models\User;
+use App\Services\AppointmentTypeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 /*
@@ -54,4 +58,40 @@ function bookingWeekdayPayload(array $openWeekdays = []): array
             'end_time' => in_array($weekday, $openWeekdays, true) ? '17:00' : null,
         ])
         ->all();
+}
+
+/**
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function publicBookingPayload(User $doctor, AppointmentType $type, array $overrides = []): array
+{
+    return array_merge([
+        'clinic_id' => $doctor->clinic_id,
+        'doctor_id' => $doctor->id,
+        'name' => 'مريض QA',
+        'phone' => '+963999123456',
+        'date' => '2026-07-29',
+        'start_time' => '09:00',
+        'appointment_type_id' => $type->id,
+    ], $overrides);
+}
+
+/**
+ * @param  array<string, mixed>  $params
+ */
+function doctorContextRoute(string $routeName, User $doctor, array $params = []): string
+{
+    return route($routeName, array_merge([
+        'clinic_id' => $doctor->clinic_id,
+        'doctor_id' => $doctor->id,
+    ], $params));
+}
+
+/**
+ * @return Collection<int, AppointmentType>
+ */
+function ensureFixedAppointmentTypes(User $doctor): Collection
+{
+    return app(AppointmentTypeService::class)->ensureForDoctor($doctor);
 }

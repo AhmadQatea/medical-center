@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Doctor\StoreHolidayRequest;
 use App\Http\Requests\Doctor\UpdateScheduleRequest;
 use App\Models\Holiday;
+use App\Services\AdminBookingContextService;
 use App\Services\ScheduleService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,61 +17,88 @@ class ScheduleController extends Controller
 {
     public function __construct(
         private ScheduleService $schedule,
+        private AdminBookingContextService $context,
     ) {}
 
-    /**
-     * Display schedule management (settings, working hours, holidays).
-     */
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
-        $doctor = $request->user();
-        $settings = $this->schedule->getSettings($doctor);
-        $workingHours = $this->schedule->ensureWorkingHours($doctor);
-        $holidays = $this->schedule->listHolidays($doctor);
+        $bookingContext = $this->context->resolve(
+            $request->user(),
+            $request->integer('clinic_id') ?: null,
+            $request->integer('doctor_id') ?: null,
+        );
+
+        if ($request->user()->isAdmin()
+            && $bookingContext['auto_selected_doctor']
+            && $bookingContext['doctor'] !== null
+            && ! $request->filled('doctor_id')) {
+            return redirect()->route('doctor.schedule.index', $this->context->queryParams(
+                $bookingContext['clinic'],
+                $bookingContext['doctor'],
+            ));
+        }
+
+        $settings = null;
+        $workingHours = collect();
+        $holidays = collect();
+        $hasOpenDays = false;
+
+        if ($bookingContext['state'] === AdminBookingContextService::STATE_READY) {
+            $doctor = $bookingContext['doctor'];
+            $settings = $this->schedule->getSettings($doctor);
+            $workingHours = $this->schedule->ensureWorkingHours($doctor);
+            $holidays = $this->schedule->listHolidays($doctor);
+            $hasOpenDays = $workingHours->contains(fn ($day): bool => (bool) $day->is_open);
+        }
 
         return view('doctor.schedule.index', [
+            'bookingContext' => $bookingContext,
             'settings' => $settings,
             'workingHours' => $workingHours,
             'holidays' => $holidays,
+            'hasOpenDays' => $hasOpenDays,
             'scheduleService' => $this->schedule,
         ]);
     }
 
-    /**
-     * Persist schedule settings and working hours.
-     */
     public function update(
         UpdateScheduleRequest $request,
         UpdateScheduleAction $updateSchedule,
     ): RedirectResponse {
-        $updateSchedule->handle($request->user(), $request->scheduleData());
+        $doctor = $request->targetDoctor();
+        $updateSchedule->handle($doctor, $request->scheduleData());
 
         return redirect()
-            ->route('doctor.schedule.index')
-            ->with('success', 'تم حفظ جدول العيادة بنجاح.');
+            ->route('doctor.schedule.index', $this->context->queryParams(
+                $doctor->clinic,
+                $doctor,
+            ))
+            ->with('success', 'تم حفظ الجدول بنجاح.');
     }
 
-    /**
-     * Add a full-day holiday closure.
-     */
     public function storeHoliday(StoreHolidayRequest $request): RedirectResponse
     {
-        $this->schedule->createHoliday($request->user(), $request->holidayData());
+        $doctor = $request->targetDoctor();
+        $this->schedule->createHoliday($doctor, $request->holidayData());
 
         return redirect()
-            ->route('doctor.schedule.index')
+            ->route('doctor.schedule.index', $this->context->queryParams(
+                $doctor->clinic,
+                $doctor,
+            ))
             ->with('success', 'تمت إضافة الإجازة.');
     }
 
-    /**
-     * Remove a holiday closure owned by the authenticated doctor.
-     */
     public function destroyHoliday(Holiday $holiday): RedirectResponse
     {
+        $doctor = $holiday->user;
         $this->schedule->deleteHoliday($holiday);
 
         return redirect()
-            ->route('doctor.schedule.index')
+            ->route('doctor.schedule.index', $this->context->queryParams(
+                $doctor?->clinic,
+                $doctor,
+            ))
             ->with('success', 'تم حذف الإجازة.');
     }
 }

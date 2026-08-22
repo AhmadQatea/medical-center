@@ -3,7 +3,7 @@
 @section('title', 'المرضى')
 
 @section('content')
-    <x-layout.page-header title="المرضى" description="سجل مرضى العيادة" />
+    <x-layout.page-header title="المرضى" description="سجل مرضى المركز الطبي" />
 
     <div class="ds-stack">
         <x-ui.card>
@@ -52,7 +52,14 @@
                         :last-visit="$patient->updated_at?->locale('ar')->translatedFormat('j F Y') ?? '—'"
                         :visits="$patient->appointments_count"
                         :notes="null"
-                    />
+                    >
+                        @if (auth()->user()?->isAdmin() && ($patient->user || $patient->user?->clinic))
+                            <p class="text-xs text-foreground-subtle">
+                                {{ $patient->user?->clinic?->name ?? '—' }}
+                                · {{ $patient->user?->name ?? '—' }}
+                            </p>
+                        @endif
+                    </x-doctor.patient-row>
                 @endforeach
             </div>
             {{ $patients->withQueryString()->links() }}

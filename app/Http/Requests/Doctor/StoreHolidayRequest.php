@@ -2,12 +2,15 @@
 
 namespace App\Http\Requests\Doctor;
 
+use App\Http\Requests\Doctor\Concerns\ResolvesAdminBookingContext;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreHolidayRequest extends FormRequest
 {
+    use ResolvesAdminBookingContext;
+
     public function authorize(): bool
     {
         return true;
@@ -18,13 +21,17 @@ class StoreHolidayRequest extends FormRequest
      */
     public function rules(): array
     {
+        $doctor = $this->targetDoctor();
+
         return [
+            'clinic_id' => ['nullable', 'integer', 'exists:clinics,id'],
+            'doctor_id' => ['nullable', 'integer', 'exists:users,id'],
             'date' => [
                 'required',
                 'date',
                 'after_or_equal:today',
                 Rule::unique('holidays', 'date')->where(
-                    fn ($query) => $query->where('user_id', $this->user()?->id),
+                    fn ($query) => $query->where('user_id', $doctor->id),
                 ),
             ],
             'title' => ['nullable', 'string', 'max:150'],

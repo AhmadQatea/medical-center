@@ -2,15 +2,11 @@
 
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
-use App\Models\AppointmentType;
 use App\Models\Holiday;
 use App\Models\User;
 use App\Services\ClinicSettingsService;
 
 use function Pest\Laravel\actingAs;
-use function Pest\Laravel\delete;
-use function Pest\Laravel\get;
-use function Pest\Laravel\patch;
 use function Pest\Laravel\post;
 
 test('doctor cannot access another doctors appointment via scoped binding', function () {
@@ -26,14 +22,11 @@ test('doctor cannot access another doctors appointment via scoped binding', func
         ->assertNotFound();
 });
 
-test('doctor cannot access another doctors appointment type', function () {
-    $doctorA = User::factory()->create();
-    $doctorB = User::factory()->create();
+test('appointment types management routes are not registered', function () {
+    $doctor = User::factory()->create();
 
-    $type = AppointmentType::factory()->create(['user_id' => $doctorB->id]);
-
-    actingAs($doctorA)
-        ->get(route('doctor.appointment-types.edit', $type))
+    actingAs($doctor)
+        ->get('/doctor/appointment-types')
         ->assertNotFound();
 });
 

@@ -18,9 +18,13 @@ class ClinicSettingFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'clinic_name' => 'العيادة السنية التخصصية',
-            'specialty' => 'طبيب أسنان',
-            'description' => 'ابتسامة أجمل تبدأ بثقة ورعاية احترافية.',
+            'clinic_name' => fake()->randomElement([
+                'عيادة الأسنان',
+                'عيادة الجلدية',
+                'عيادة الأطفال',
+            ]),
+            'specialty' => fake()->randomElement(['طبيب أسنان', 'طبيب جلدية', 'طبيب أطفال']),
+            'description' => 'رعاية طبية متخصصة ضمن المركز الطبي.',
             'city' => null,
             'address' => null,
             'whatsapp_number' => '963999123456',

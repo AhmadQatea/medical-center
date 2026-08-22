@@ -13,6 +13,8 @@ use App\Http\Requests\Doctor\RescheduleAppointmentRequest;
 use App\Http\Requests\Doctor\StoreInstantBookingRequest;
 use App\Http\Requests\Doctor\UpdateAppointmentStatusRequest;
 use App\Models\Appointment;
+use App\Services\AdminBookingContextService;
+use App\Services\AppointmentTypeService;
 use App\Services\BookingService;
 use App\Services\ScheduleService;
 use App\Services\WhatsAppService;
@@ -26,12 +28,24 @@ class BookingController extends Controller
         private BookingService $bookings,
         private ScheduleService $schedule,
         private WhatsAppService $whatsapp,
+        private AdminBookingContextService $context,
+        private AppointmentTypeService $appointmentTypes,
     ) {}
 
     public function index(ListBookingsRequest $request): View
     {
-        $appointments = $this->bookings->listForDoctor($request->user(), $request->filters());
+        $filters = $request->filters();
 
+        $bookingContext = $this->context->resolveOptionalFilters(
+            $request->user(),
+            $filters['clinic_id'] ?? null,
+            $filters['doctor_id'] ?? null,
+        );
+
+        $filters['clinic_id'] = $bookingContext['clinic']?->id;
+        $filters['doctor_id'] = $bookingContext['doctor']?->id;
+
+        $appointments = $this->bookings->listForDoctor($request->user(), $filters);
         $whatsappUrls = [];
 
         foreach ($appointments as $appointment) {
@@ -41,19 +55,42 @@ class BookingController extends Controller
         }
 
         return view('doctor.bookings.index', [
+            'bookingContext' => $bookingContext,
             'appointments' => $appointments,
             'statuses' => AppointmentStatus::options(),
             'whatsappUrls' => $whatsappUrls,
         ]);
     }
 
-    public function instant(Request $request): View
+    public function instant(Request $request): View|RedirectResponse
     {
-        $doctor = $request->user();
-        $weeks = $this->schedule->bookingWeeks($doctor);
-        $appointmentTypes = $doctor->appointmentTypes()->active()->ordered()->get();
+        $bookingContext = $this->context->resolve(
+            $request->user(),
+            $request->integer('clinic_id') ?: null,
+            $request->integer('doctor_id') ?: null,
+        );
+
+        if ($request->user()->isAdmin()
+            && $bookingContext['auto_selected_doctor']
+            && $bookingContext['doctor'] !== null
+            && ! $request->filled('doctor_id')) {
+            return redirect()->route('doctor.bookings.instant', $this->context->queryParams(
+                $bookingContext['clinic'],
+                $bookingContext['doctor'],
+            ));
+        }
+
+        $weeks = ['has_availability' => false, 'this_week' => [], 'next_week' => []];
+        $appointmentTypes = collect();
+
+        if ($bookingContext['state'] === AdminBookingContextService::STATE_READY) {
+            $doctor = $bookingContext['doctor'];
+            $weeks = $this->schedule->bookingWeeks($doctor);
+            $appointmentTypes = $this->appointmentTypes->activeForDoctor($doctor);
+        }
 
         return view('doctor.bookings.instant', [
+            'bookingContext' => $bookingContext,
             'appointmentTypes' => $appointmentTypes,
             'weeks' => $weeks,
         ]);
@@ -63,7 +100,8 @@ class BookingController extends Controller
         StoreInstantBookingRequest $request,
         CreateInstantBookingAction $createInstantBooking,
     ): RedirectResponse {
-        $appointment = $createInstantBooking->handle($request->user(), $request->bookingData());
+        $doctor = $request->targetDoctor();
+        $appointment = $createInstantBooking->handle($doctor, $request->bookingData());
 
         return redirect()
             ->route('doctor.bookings.show', $appointment)
@@ -72,7 +110,7 @@ class BookingController extends Controller
 
     public function show(Appointment $appointment): View
     {
-        $appointment->load(['patient', 'appointmentType']);
+        $appointment->load(['patient', 'appointmentType', 'clinic', 'user']);
 
         return view('doctor.bookings.show', [
             'appointment' => $appointment,
@@ -92,7 +130,7 @@ class BookingController extends Controller
         $slots = $this->schedule->availableSlots($appointment->user, $appointment->date, $appointment->id);
 
         return view('doctor.bookings.edit', [
-            'appointment' => $appointment->load('patient'),
+            'appointment' => $appointment->load(['patient', 'clinic', 'user']),
             'slots' => $slots,
         ]);
     }
@@ -152,7 +190,10 @@ class BookingController extends Controller
         );
 
         return redirect()
-            ->route('doctor.bookings.index')
+            ->route('doctor.bookings.index', $this->context->queryParams(
+                $appointment->clinic,
+                $appointment->user,
+            ))
             ->with('success', 'تم إلغاء الموعد.');
     }
 }

@@ -1,12 +1,12 @@
-{{-- Layout: Navbar — sticky, safe-area aware --}}
+{{-- Layout: Navbar — CarePoint top bar --}}
 @props([
-    'brand' => config('clinic.name', config('app.name')),
+    'title' => config('clinic.medical_center.name', 'نظام الإدارة'),
     'showSidebarToggle' => true,
 ])
 
-<header {{ $attributes->merge(['class' => 'sticky top-0 z-30 border-b border-navbar-border bg-navbar/95 backdrop-blur-md ds-safe-top']) }}>
-    <div class="flex min-h-14 items-center justify-between gap-3 px-4 sm:px-6">
-        <div class="flex min-w-0 items-center gap-2">
+<header {{ $attributes->merge(['class' => 'z-30 shrink-0 border-b border-navbar-border bg-navbar']) }}>
+    <div class="flex min-h-[4.25rem] items-center justify-between gap-4 px-4 sm:px-6">
+        <div class="flex min-w-0 flex-1 items-center gap-3">
             @if ($showSidebarToggle)
                 <button
                     type="button"
@@ -22,11 +22,15 @@
                 </button>
             @endif
 
-            <span class="truncate text-sm font-bold text-navbar-foreground lg:hidden">{{ $brand }}</span>
+            <div class="min-w-0">
+                <p class="truncate text-lg font-bold text-primary sm:text-xl">{{ $title }}</p>
+                <p class="hidden truncate text-xs text-foreground-muted sm:block">{{ config('clinic.brand.name') }}</p>
+            </div>
         </div>
 
-        <div class="flex shrink-0 items-center gap-2">
+        <div class="flex shrink-0 items-center gap-2 sm:gap-3">
             {{ $actions ?? '' }}
+            <x-layout.user-menu />
         </div>
     </div>
 </header>

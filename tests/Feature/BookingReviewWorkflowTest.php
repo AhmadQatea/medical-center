@@ -6,13 +6,11 @@ use App\Models\Appointment;
 use App\Models\AppointmentType;
 use App\Models\User;
 use App\Services\ClinicSettingsService;
+use App\Services\ScheduleService;
 use App\Services\WhatsAppService;
 use Carbon\Carbon;
 
 use function Pest\Laravel\actingAs;
-use function Pest\Laravel\get;
-use function Pest\Laravel\patch;
-use function Pest\Laravel\post;
 
 test('doctor can view booking details page', function () {
     $doctor = User::factory()->create();
@@ -28,7 +26,7 @@ test('doctor can view booking details page', function () {
         ->assertSee($appointment->patient->name)
         ->assertSee('تأكيد الحجز')
         ->assertSee('معلومات المريض')
-        ->assertSee('معلومات الموعد');
+        ->assertSee('تفاصيل الزيارة');
 });
 
 test('confirm booking updates status and stays on details page', function () {
@@ -47,7 +45,7 @@ test('confirm booking updates status and stays on details page', function () {
 });
 
 test('confirmed booking shows whatsapp button with generated message', function () {
-    $doctor = User::factory()->create(['name' => 'العيادة السنية التخصصية']);
+    $doctor = User::factory()->create(['name' => 'د. أحمد']);
     app(ClinicSettingsService::class)->get($doctor);
 
     $type = AppointmentType::factory()->create([
@@ -71,13 +69,13 @@ test('confirmed booking shows whatsapp button with generated message', function 
         ->get(route('doctor.bookings.show', $appointment))
         ->assertOk()
         ->assertSee('إرسال رسالة التأكيد عبر واتساب')
-        ->assertSee('السلام عليكم أحمد')
+        ->assertSee('👤 المريض: أحمد')
         ->assertSee('معاينة');
 
     $url = app(WhatsAppService::class)->patientConfirmationUrl($appointment->fresh());
 
     expect($url)->toContain('https://wa.me/963999123456')
-        ->and(urldecode($url))->toContain('تم تأكيد موعدكم');
+        ->and(urldecode($url))->toContain('طلب موعد جديد');
 });
 
 test('doctor can complete and mark no show from confirmed booking', function () {
@@ -112,7 +110,8 @@ test('doctor can complete and mark no show from confirmed booking', function () 
 test('generate booking confirmation message action builds arabic message', function () {
     $doctor = User::factory()->create();
     $settings = app(ClinicSettingsService::class)->get($doctor);
-    $settings->update(['clinic_name' => 'العيادة السنية التخصصية']);
+    $doctor->clinic?->update(['name' => 'عيادة الأسنان']);
+    $settings->update(['clinic_name' => 'عيادة الأسنان']);
 
     $type = AppointmentType::factory()->create([
         'user_id' => $doctor->id,
@@ -132,8 +131,8 @@ test('generate booking confirmation message action builds arabic message', funct
     $message = app(GenerateBookingConfirmationMessage::class)->handle($appointment->fresh());
 
     expect($message)
-        ->toContain('السلام عليكم سارة')
-        ->toContain('العيادة السنية التخصصية')
+        ->toContain('👤 المريض: سارة')
+        ->toContain('عيادة الأسنان')
         ->toContain('تنظيف')
         ->toContain('يرجى الحضور قبل الموعد بعشر دقائق');
 });
@@ -145,12 +144,9 @@ test('instant booking redirects to booking details page', function () {
     $doctor = User::factory()->create();
     app(ClinicSettingsService::class)->get($doctor);
 
-    $type = AppointmentType::factory()->create([
-        'user_id' => $doctor->id,
-        'is_active' => true,
-    ]);
+    $type = ensureFixedAppointmentTypes($doctor)->first();
 
-    $schedule = app(\App\Services\ScheduleService::class);
+    $schedule = app(ScheduleService::class);
     $schedule->getSettings($doctor);
     $schedule->updateSettings($doctor, [
         'appointment_duration_minutes' => 30,

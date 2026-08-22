@@ -1,53 +1,68 @@
 <?php
 
 /**
- * Clinic identity — Specialized Dental Clinic
+ * Medical center identity, branding, and default department seed values.
+ *
+ * Org-level identity: medical_center.* and brand.*
+ * Department defaults (seeding only): default_department.*
  */
 
 return [
 
-    'name' => 'العيادة السنية التخصصية',
-
-    'name_en' => 'Specialized Dental Clinic',
-
-    'doctor' => [
-        'name' => 'العيادة السنية التخصصية',
-        'name_en' => 'Specialized Dental Clinic',
-        'title' => 'طبيب أسنان',
-        'specialty' => 'طبيب أسنان',
-        'initials' => 'عس',
+    'medical_center' => [
+        'name' => env('MEDICAL_CENTER_NAME', 'المركز الطبي التخصصي'),
+        'name_en' => env('MEDICAL_CENTER_NAME_EN', 'Specialized Medical Center'),
+        'description' => env('MEDICAL_CENTER_DESCRIPTION', 'مركز طبي متكامل يضم عدة عيادات وتخصصات.'),
+        'whatsapp' => env('MEDICAL_CENTER_WHATSAPP', env('CLINIC_WHATSAPP', '963999123456')),
+        'email' => env('MEDICAL_CENTER_EMAIL', env('DOCTOR_EMAIL', 'clinic@example.com')),
+        'address' => env('MEDICAL_CENTER_ADDRESS'),
+        'city' => env('MEDICAL_CENTER_CITY'),
     ],
 
-    'description' => 'ابتسامة أجمل تبدأ بثقة ورعاية احترافية.',
-
-    'city' => null,
-
-    'address' => null,
-
-    'whatsapp' => '963999123456',
-
-    'email' => 'clinic@example.com',
+    'brand' => [
+        'name' => env('APP_BRAND_NAME', 'CarePoint'),
+    ],
 
     /*
     |--------------------------------------------------------------------------
-    | Clinic timezone
+    | Default department (first seeded clinic — not the org identity)
     |--------------------------------------------------------------------------
-    |
-    | Used for slot availability, "today" boundaries, and displayed times.
-    | Syrian clinics should use Asia/Damascus.
-    |
     */
+    'default_department' => [
+        'name' => env('DEFAULT_CLINIC_NAME', 'عيادة الأسنان'),
+        'name_en' => env('DEFAULT_CLINIC_NAME_EN', 'Dental Clinic'),
+        'slug' => env('DEFAULT_CLINIC_SLUG', 'dental'),
+        'specialty' => env('DEFAULT_CLINIC_SPECIALTY', 'طبيب أسنان'),
+        'description' => env('DEFAULT_CLINIC_DESCRIPTION', 'رعاية أسنان متخصصة ضمن المركز الطبي.'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Legacy keys — prefer medical_center.* / default_department.* in new code
+    |--------------------------------------------------------------------------
+    */
+    'name' => env('DEFAULT_CLINIC_NAME', 'عيادة الأسنان'),
+    'name_en' => env('DEFAULT_CLINIC_NAME_EN', 'Dental Clinic'),
+    'description' => env('DEFAULT_CLINIC_DESCRIPTION', 'رعاية أسنان متخصصة ضمن المركز الطبي.'),
+    'city' => env('MEDICAL_CENTER_CITY'),
+    'address' => env('MEDICAL_CENTER_ADDRESS'),
+    'whatsapp' => env('MEDICAL_CENTER_WHATSAPP', env('CLINIC_WHATSAPP', '963999123456')),
+    'email' => env('MEDICAL_CENTER_EMAIL', env('DOCTOR_EMAIL', 'clinic@example.com')),
+
+    'doctor' => [
+        'specialty' => env('DEFAULT_CLINIC_SPECIALTY', 'طبيب أسنان'),
+    ],
+
     'timezone' => env('CLINIC_TIMEZONE', 'Asia/Damascus'),
 
     /*
     |--------------------------------------------------------------------------
-    | Seeded doctor account (local/testing only)
+    | Seeded admin account (local/testing only)
     |--------------------------------------------------------------------------
     */
-
     'seed_doctor' => [
         'email' => env('DOCTOR_EMAIL', 'clinic@example.com'),
-        'name' => env('DOCTOR_NAME', 'العيادة السنية التخصصية'),
+        'name' => env('ADMIN_NAME', 'مدير المركز'),
         'password' => env('DOCTOR_PASSWORD'),
     ],
 

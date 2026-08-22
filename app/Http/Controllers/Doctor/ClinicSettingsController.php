@@ -40,6 +40,6 @@ class ClinicSettingsController extends Controller
 
         return redirect()
             ->route('doctor.settings.index')
-            ->with('success', 'تم حفظ إعدادات العيادة بنجاح.');
+            ->with('success', 'تم حفظ إعدادات الحجز العام بنجاح.');
     }
 }

@@ -1,40 +1,68 @@
 @extends('layouts.doctor')
 
-@section('title', 'المواعيد')
+@section('title', 'قائمة الحجوزات')
 
 @section('content')
-    <x-layout.page-header title="المواعيد" description="كل الحجوزات في مكان واحد">
+    @php
+        $contextQuery = app(\App\Services\AdminBookingContextService::class)->queryParams(
+            $bookingContext['clinic'] ?? null,
+            $bookingContext['doctor'] ?? null,
+        );
+        $canCreateInstant = ($bookingContext['clinic'] ?? null) !== null
+            && ($bookingContext['doctor'] ?? null) !== null;
+    @endphp
+
+    <x-layout.page-header
+        title="قائمة الحجوزات"
+        description="عرض كل الحجوزات مع التصفية حسب العيادة ثم الطبيب"
+    >
         <x-slot:actions>
-            <x-ui.button href="{{ route('doctor.bookings.instant') }}" variant="primary" size="sm">موعد جديد</x-ui.button>
+            <x-ui.button
+                href="{{ route('doctor.bookings.instant', $contextQuery) }}"
+                variant="primary"
+                size="sm"
+            >
+                + حجز جديد
+            </x-ui.button>
         </x-slot:actions>
     </x-layout.page-header>
 
     <div class="ds-stack">
-        <x-ui.card>
-            <form method="get" action="{{ route('doctor.bookings.index') }}" class="grid gap-4 sm:grid-cols-[1fr_1fr_auto]">
+        <x-doctor.clinic-doctor-context
+            :context="$bookingContext"
+            :action="route('doctor.bookings.index')"
+            :preserve="request()->only(['search', 'status', 'date'])"
+            :blocking="false"
+        />
+
+        <x-ui.card class="!p-4 sm:!p-5">
+            <form method="get" action="{{ route('doctor.bookings.index') }}" class="grid gap-4 lg:grid-cols-[2fr_1fr_1fr_auto]">
+                @if ($bookingContext['clinic'] ?? null)
+                    <input type="hidden" name="clinic_id" value="{{ $bookingContext['clinic']->id }}">
+                @endif
+                @if ($bookingContext['doctor'] ?? null)
+                    <input type="hidden" name="doctor_id" value="{{ $bookingContext['doctor']->id }}">
+                @endif
+
                 <x-form.input
                     name="search"
                     label="بحث"
-                    placeholder="اسم المريض أو الجوال"
+                    placeholder="ابحث باسم المريض أو رقم الهاتف..."
                     :value="request('search')"
                 />
-                <x-form.select name="status" label="الحالة" :value="request('status')">
+                <x-form.select name="status" label="حالة الحجز" :value="request('status')">
                     <option value="">الكل</option>
                     @foreach ($statuses as $value => $label)
                         <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
                     @endforeach
                 </x-form.select>
+                <x-form.input name="date" type="date" label="التاريخ" :value="request('date')" dir="ltr" />
                 <div class="flex items-end gap-2">
-                    <button
-                        type="submit"
-                        class="inline-flex min-h-14 w-full items-center justify-center rounded-xl bg-primary-soft px-5 text-sm font-semibold text-primary transition hover:bg-primary-muted/40 sm:w-auto"
-                    >
-                        تصفية
-                    </button>
-                    @if (request()->filled('search') || request()->filled('status'))
+                    <x-ui.button type="submit" variant="soft" size="md" class="w-full sm:w-auto">تصفية</x-ui.button>
+                    @if (request()->hasAny(['search', 'status', 'date', 'clinic_id', 'doctor_id']))
                         <a
                             href="{{ route('doctor.bookings.index') }}"
-                            class="inline-flex min-h-14 items-center justify-center rounded-xl px-4 text-sm font-medium text-foreground-muted hover:bg-surface-subtle"
+                            class="inline-flex min-h-12 items-center justify-center rounded-xl px-4 text-sm font-medium text-foreground-muted hover:bg-surface-subtle"
                         >
                             مسح
                         </a>
@@ -46,27 +74,38 @@
         @if ($appointments->isEmpty())
             <x-ui.empty-state
                 title="لا توجد مواعيد"
-                description="{{ request()->hasAny(['search', 'status']) ? 'لا نتائج مطابقة للتصفية الحالية.' : 'ستظهر الحجوزات هنا بعد إنشائها من صفحة الحجز أو الحجز الفوري.' }}"
+                description="{{ request()->hasAny(['search', 'status', 'date', 'clinic_id', 'doctor_id']) ? 'لا نتائج مطابقة للتصفية الحالية.' : 'ستظهر الحجوزات هنا بعد إنشائها من صفحة الحجز أو الحجز الفوري.' }}"
             >
-                @if (request()->hasAny(['search', 'status']))
+                @if (request()->hasAny(['search', 'status', 'date', 'clinic_id', 'doctor_id']))
                     <x-ui.button href="{{ route('doctor.bookings.index') }}" variant="soft" size="sm">
                         عرض كل المواعيد
                     </x-ui.button>
-                @else
-                    <x-ui.button href="{{ route('doctor.bookings.instant') }}" variant="soft" size="sm">
+                @elseif ($canCreateInstant)
+                    <x-ui.button href="{{ route('doctor.bookings.instant', $contextQuery) }}" variant="soft" size="sm">
                         إنشاء موعد
                     </x-ui.button>
                 @endif
             </x-ui.empty-state>
         @else
-            <p class="text-sm text-foreground-muted">
-                عدد النتائج: <span class="font-bold text-foreground">{{ $appointments->total() }}</span>
-            </p>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-sm text-foreground-muted">
+                    عرض <span class="font-semibold text-foreground">{{ $appointments->firstItem() }}</span>
+                    إلى <span class="font-semibold text-foreground">{{ $appointments->lastItem() }}</span>
+                    من أصل <span class="font-semibold text-foreground">{{ $appointments->total() }}</span> حجز
+                </p>
+            </div>
 
-            <div class="ds-list-stack">
+            <div class="hidden md:block">
+                <x-doctor.appointments-table
+                    :appointments="$appointments"
+                    :whatsapp-urls="$whatsappUrls"
+                />
+            </div>
+
+            <div class="ds-list-stack md:hidden">
                 @foreach ($appointments as $appointment)
                     <x-ui.card>
-                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="flex flex-col gap-4">
                             <div class="min-w-0 flex-1 space-y-2">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <p class="text-lg font-bold text-foreground">{{ $appointment->patient?->name }}</p>
@@ -74,6 +113,12 @@
                                         {{ $appointment->status->label() }}
                                     </x-ui.badge>
                                 </div>
+                                @if ($appointment->clinic || $appointment->user)
+                                    <p class="text-xs text-foreground-muted">
+                                        {{ $appointment->clinic?->name ?? '—' }}
+                                        · {{ $appointment->user?->name ?? '—' }}
+                                    </p>
+                                @endif
                                 <p class="text-sm text-foreground-muted">
                                     {{ $appointment->date?->locale('ar')->translatedFormat('l j F Y') }}
                                     · @arabicTime($appointment->start_time)
@@ -89,12 +134,10 @@
                                 </p>
                             </div>
 
-                            <div class="shrink-0">
-                                <x-doctor.booking-row-actions
-                                    :appointment="$appointment"
-                                    :whatsapp-url="$whatsappUrls[$appointment->id] ?? null"
-                                />
-                            </div>
+                            <x-doctor.booking-row-actions
+                                :appointment="$appointment"
+                                :whatsapp-url="$whatsappUrls[$appointment->id] ?? null"
+                            />
                         </div>
                     </x-ui.card>
                 @endforeach

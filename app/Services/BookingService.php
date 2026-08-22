@@ -4,13 +4,18 @@ namespace App\Services;
 
 use App\Enums\AppointmentSource;
 use App\Enums\AppointmentStatus;
+use App\Enums\UserRole;
 use App\Models\Appointment;
+use App\Models\Clinic;
+use App\Models\Patient;
 use App\Models\User;
 use App\Support\BookingSlotKey;
 use App\Support\TimeFormat;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -130,15 +135,49 @@ class BookingService
     }
 
     /**
-     * @param  array{date?: string, status?: string, search?: string, per_page?: int}  $filters
+     * @param  array{date?: string, status?: string, search?: string, clinic_id?: int|null, doctor_id?: int|null, per_page?: int}  $filters
      */
     public function listForDoctor(User $doctor, array $filters = []): LengthAwarePaginator
     {
-        return $doctor->appointments()
-            ->with(['patient', 'appointmentType'])
+        if ($doctor->isAdmin()) {
+            return $this->listForMedicalCenter($filters);
+        }
+
+        return $this->appointmentQuery($filters)
+            ->where('user_id', $doctor->id)
+            ->paginate($filters['per_page'] ?? 15);
+    }
+
+    /**
+     * @param  array{date?: string, status?: string, search?: string, clinic_id?: int|null, doctor_id?: int|null, per_page?: int}  $filters
+     */
+    public function listForMedicalCenter(array $filters = []): LengthAwarePaginator
+    {
+        return $this->appointmentQuery($filters)->paginate($filters['per_page'] ?? 15);
+    }
+
+    /**
+     * @param  array{date?: string, status?: string, search?: string, clinic_id?: int|null, doctor_id?: int|null}  $filters
+     */
+    private function appointmentQuery(array $filters)
+    {
+        return Appointment::query()
+            ->with(['patient', 'appointmentType', 'user', 'clinic'])
             ->when(
                 filled($filters['status'] ?? null),
                 fn ($q) => $q->where('status', $filters['status']),
+            )
+            ->when(
+                filled($filters['clinic_id'] ?? null),
+                fn ($q) => $q->where('clinic_id', $filters['clinic_id']),
+            )
+            ->when(
+                filled($filters['doctor_id'] ?? null),
+                fn ($q) => $q->where('user_id', $filters['doctor_id']),
+            )
+            ->when(
+                filled($filters['date'] ?? null),
+                fn ($q) => $q->whereDate('date', $filters['date']),
             )
             ->when(
                 filled($filters['search'] ?? null),
@@ -154,24 +193,22 @@ class BookingService
                 },
             )
             ->orderByDesc('date')
-            ->orderBy('start_time')
-            ->paginate($filters['per_page'] ?? 15);
+            ->orderBy('start_time');
     }
 
     public function findForDoctor(User $doctor, int $appointmentId): Appointment
     {
         return $doctor->appointments()
-            ->with(['patient', 'appointmentType'])
+            ->with(['patient', 'appointmentType', 'clinic', 'user'])
             ->findOrFail($appointmentId);
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Appointment>
+     * @return Collection<int, Appointment>
      */
     public function pendingForDoctor(User $doctor, int $limit = 10)
     {
-        return $doctor->appointments()
-            ->with(['patient', 'appointmentType'])
+        return $this->dashboardAppointmentsQuery($doctor)
             ->where('status', AppointmentStatus::Pending)
             ->orderBy('date')
             ->orderBy('start_time')
@@ -180,12 +217,11 @@ class BookingService
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Appointment>
+     * @return Collection<int, Appointment>
      */
     public function todayForDoctor(User $doctor)
     {
-        return $doctor->appointments()
-            ->with(['patient', 'appointmentType'])
+        return $this->dashboardAppointmentsQuery($doctor)
             ->whereDate('date', today())
             ->whereNot('status', AppointmentStatus::Cancelled)
             ->orderBy('start_time')
@@ -193,12 +229,11 @@ class BookingService
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Appointment>
+     * @return Collection<int, Appointment>
      */
     public function confirmedForDoctor(User $doctor, int $limit = 10)
     {
-        return $doctor->appointments()
-            ->with(['patient', 'appointmentType'])
+        return $this->dashboardAppointmentsQuery($doctor)
             ->where('status', AppointmentStatus::Confirmed)
             ->whereDate('date', '>=', today())
             ->orderBy('date')
@@ -210,12 +245,11 @@ class BookingService
     /**
      * Upcoming appointments after today (confirmed / pending).
      *
-     * @return \Illuminate\Support\Collection<int, Appointment>
+     * @return Collection<int, Appointment>
      */
     public function upcomingForDoctor(User $doctor, int $limit = 10)
     {
-        return $doctor->appointments()
-            ->with(['patient', 'appointmentType'])
+        return $this->dashboardAppointmentsQuery($doctor)
             ->whereDate('date', '>', today())
             ->whereIn('status', [
                 AppointmentStatus::Pending->value,
@@ -225,6 +259,22 @@ class BookingService
             ->orderBy('start_time')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Admin sees center-wide appointments; doctors see their own.
+     *
+     * @return Builder<Appointment>|HasMany<Appointment, User>
+     */
+    private function dashboardAppointmentsQuery(User $user)
+    {
+        if ($user->isAdmin()) {
+            return Appointment::query()
+                ->with(['patient', 'appointmentType', 'clinic', 'user']);
+        }
+
+        return $user->appointments()
+            ->with(['patient', 'appointmentType', 'clinic', 'user']);
     }
 
     /**
@@ -239,39 +289,112 @@ class BookingService
      *     by_type: Collection<int, array{name: string, color: ?string, count: int}>
      * }
      */
-    public function dashboardStats(User $doctor): array
+    public function dashboardStats(User $user): array
     {
-        $weekStart = now()->startOfWeek(Carbon::SATURDAY);
-        $weekEnd = now()->endOfWeek(Carbon::FRIDAY);
+        if ($user->isAdmin()) {
+            return $this->dashboardStatsForCenter();
+        }
+
+        $weekStart = now()->startOfWeek(Carbon::SATURDAY)->toDateString();
+        $weekEnd = now()->endOfWeek(Carbon::FRIDAY)->toDateString();
+        $today = today()->toDateString();
+        $cancelled = AppointmentStatus::Cancelled->value;
+        $pending = AppointmentStatus::Pending->value;
+        $confirmed = AppointmentStatus::Confirmed->value;
+
+        $row = $user->appointments()
+            ->selectRaw('
+                SUM(CASE WHEN date = ? AND status != ? THEN 1 ELSE 0 END) as today_count,
+                SUM(CASE WHEN date BETWEEN ? AND ? AND status != ? THEN 1 ELSE 0 END) as week_count,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending_count,
+                SUM(CASE WHEN status = ? AND date >= ? THEN 1 ELSE 0 END) as confirmed_count,
+                SUM(CASE WHEN date > ? AND status IN (?, ?) THEN 1 ELSE 0 END) as upcoming_count
+            ', [
+                $today, $cancelled,
+                $weekStart, $weekEnd, $cancelled,
+                $pending,
+                $confirmed, $today,
+                $today, $pending, $confirmed,
+            ])
+            ->first();
 
         return [
-            'today_count' => $doctor->appointments()
-                ->whereDate('date', today())
-                ->whereNot('status', AppointmentStatus::Cancelled)
-                ->count(),
-            'week_count' => $doctor->appointments()
-                ->whereBetween('date', [$weekStart->toDateString(), $weekEnd->toDateString()])
-                ->whereNot('status', AppointmentStatus::Cancelled)
-                ->count(),
-            'available_slots' => $this->schedule->availableSlots($doctor, now())->count(),
-            'new_patients' => $doctor->patients()
-                ->whereBetween('created_at', [$weekStart, $weekEnd])
-                ->count(),
-            'pending_count' => $doctor->appointments()
-                ->where('status', AppointmentStatus::Pending)
-                ->count(),
-            'confirmed_count' => $doctor->appointments()
-                ->where('status', AppointmentStatus::Confirmed)
-                ->whereDate('date', '>=', today())
-                ->count(),
-            'upcoming_count' => $doctor->appointments()
-                ->whereDate('date', '>', today())
-                ->whereIn('status', [
-                    AppointmentStatus::Pending->value,
-                    AppointmentStatus::Confirmed->value,
+            'today_count' => (int) ($row->today_count ?? 0),
+            'week_count' => (int) ($row->week_count ?? 0),
+            'available_slots' => $this->schedule->availableSlots($user, now())->count(),
+            'new_patients' => $user->patients()
+                ->whereBetween('created_at', [
+                    now()->startOfWeek(Carbon::SATURDAY),
+                    now()->endOfWeek(Carbon::FRIDAY),
                 ])
                 ->count(),
-            'by_type' => $this->bookingsGroupedByType($doctor),
+            'pending_count' => (int) ($row->pending_count ?? 0),
+            'confirmed_count' => (int) ($row->confirmed_count ?? 0),
+            'upcoming_count' => (int) ($row->upcoming_count ?? 0),
+            'by_type' => $this->bookingsGroupedByType($user),
+            'clinics_count' => null,
+            'active_doctors_count' => null,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     today_count: int,
+     *     week_count: int,
+     *     available_slots: int,
+     *     new_patients: int,
+     *     pending_count: int,
+     *     confirmed_count: int,
+     *     upcoming_count: int,
+     *     by_type: Collection<int, array{name: string, color: ?string, count: int}>,
+     *     clinics_count: int,
+     *     active_doctors_count: int
+     * }
+     */
+    private function dashboardStatsForCenter(): array
+    {
+        $weekStart = now()->startOfWeek(Carbon::SATURDAY)->toDateString();
+        $weekEnd = now()->endOfWeek(Carbon::FRIDAY)->toDateString();
+        $today = today()->toDateString();
+        $cancelled = AppointmentStatus::Cancelled->value;
+        $pending = AppointmentStatus::Pending->value;
+        $confirmed = AppointmentStatus::Confirmed->value;
+
+        $row = Appointment::query()
+            ->selectRaw('
+                SUM(CASE WHEN date = ? AND status != ? THEN 1 ELSE 0 END) as today_count,
+                SUM(CASE WHEN date BETWEEN ? AND ? AND status != ? THEN 1 ELSE 0 END) as week_count,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending_count,
+                SUM(CASE WHEN status = ? AND date >= ? THEN 1 ELSE 0 END) as confirmed_count,
+                SUM(CASE WHEN date > ? AND status IN (?, ?) THEN 1 ELSE 0 END) as upcoming_count
+            ', [
+                $today, $cancelled,
+                $weekStart, $weekEnd, $cancelled,
+                $pending,
+                $confirmed, $today,
+                $today, $pending, $confirmed,
+            ])
+            ->first();
+
+        return [
+            'today_count' => (int) ($row->today_count ?? 0),
+            'week_count' => (int) ($row->week_count ?? 0),
+            'available_slots' => 0,
+            'new_patients' => Patient::query()
+                ->whereBetween('created_at', [
+                    now()->startOfWeek(Carbon::SATURDAY),
+                    now()->endOfWeek(Carbon::FRIDAY),
+                ])
+                ->count(),
+            'pending_count' => (int) ($row->pending_count ?? 0),
+            'confirmed_count' => (int) ($row->confirmed_count ?? 0),
+            'upcoming_count' => (int) ($row->upcoming_count ?? 0),
+            'by_type' => collect(),
+            'clinics_count' => Clinic::query()->count(),
+            'active_doctors_count' => User::query()
+                ->where('role', UserRole::Doctor)
+                ->where('is_active', true)
+                ->count(),
         ];
     }
 
@@ -329,6 +452,7 @@ class BookingService
                 'end_time' => $endTime,
                 'appointment_type_id' => $data['appointment_type_id'],
             ]);
+            $appointment->clinic_id = $doctor->clinic_id;
             $appointment->status = $status;
             $appointment->source = $source;
 

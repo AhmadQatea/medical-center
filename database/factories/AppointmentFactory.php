@@ -47,6 +47,12 @@ class AppointmentFactory extends Factory
             if ($patient !== null && (int) $patient->user_id !== (int) $appointment->user_id) {
                 $patient->forceFill(['user_id' => $appointment->user_id])->save();
             }
+
+            if ($appointment->clinic_id === null && $appointment->user_id !== null) {
+                $appointment->forceFill([
+                    'clinic_id' => User::query()->find($appointment->user_id)?->clinic_id,
+                ])->save();
+            }
         })->afterMaking(function (Appointment $appointment): void {
             $appointment->status ??= AppointmentStatus::Pending;
             $appointment->source ??= AppointmentSource::Public;

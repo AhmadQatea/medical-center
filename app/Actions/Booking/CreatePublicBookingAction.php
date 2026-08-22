@@ -3,18 +3,20 @@
 namespace App\Actions\Booking;
 
 use App\Models\Appointment;
+use App\Models\Clinic;
 use App\Models\User;
 use App\Services\BookingService;
-use App\Services\ClinicSettingsService;
+use App\Services\ClinicService;
 
 class CreatePublicBookingAction
 {
     public function __construct(
         private BookingService $bookings,
-        private ClinicSettingsService $clinicSettings,
+        private ClinicService $clinics,
     ) {}
 
     /**
+     * @param  array{clinic: Clinic, doctor: User}  $context
      * @param  array{
      *     name: string,
      *     phone: string,
@@ -23,10 +25,12 @@ class CreatePublicBookingAction
      *     appointment_type_id: int
      * }  $data
      */
-    public function handle(array $data): Appointment
+    public function handle(array $context, array $data): Appointment
     {
-        $doctor = $this->clinicSettings->primaryDoctor();
-        abort_if($doctor === null, 503, 'Clinic is not configured yet.');
+        $clinic = $context['clinic'];
+        $doctor = $context['doctor'];
+
+        $this->clinics->assertDoctorBelongsToClinic($clinic, $doctor);
 
         return $this->bookings->createPublic($doctor, $data);
     }

@@ -192,24 +192,32 @@ class ScheduleService
     /**
      * Bookable days in a date range that still have at least one free slot.
      *
+     * Prefetches settings, hours, holidays, and bookings once for the range
+     * (avoids per-day N+1 queries on the public booking page).
+     *
      * @return Collection<int, array{
      *     date: string,
      *     weekday_label: string,
      *     day_label: string,
-     *     times: list<string>
+     *     times: list<array{value: string, label: string}>
      * }>
      */
     public function availableDaysInRange(User $doctor, CarbonInterface $from, CarbonInterface $to): Collection
     {
-        $this->getSettings($doctor);
-        $this->ensureWorkingHours($doctor);
+        $fromDay = $from->copy()->timezone($this->clinicTimezone())->startOfDay();
+        $toDay = $to->copy()->timezone($this->clinicTimezone())->startOfDay();
+
+        $context = $this->availabilityContext(
+            $doctor,
+            $fromDay->toDateString(),
+            $toDay->toDateString(),
+        );
 
         $days = collect();
-        $cursor = $from->copy()->startOfDay();
-        $end = $to->copy()->startOfDay();
+        $cursor = $fromDay->copy();
 
-        while ($cursor->lte($end)) {
-            $times = $this->availableSlots($doctor, $cursor);
+        while ($cursor->lte($toDay)) {
+            $times = $this->computeAvailableSlots($cursor, $context);
 
             if ($times->isNotEmpty()) {
                 $days->push([
@@ -233,8 +241,8 @@ class ScheduleService
      * This week (Sat–Fri) and next week availability for the public booking UI.
      *
      * @return array{
-     *     this_week: list<array{date: string, weekday_label: string, day_label: string, times: list<string>}>,
-     *     next_week: list<array{date: string, weekday_label: string, day_label: string, times: list<string>}>,
+     *     this_week: list<array{date: string, weekday_label: string, day_label: string, times: list<array{value: string, label: string}>}>,
+     *     next_week: list<array{date: string, weekday_label: string, day_label: string, times: list<array{value: string, label: string}>}>,
      *     has_availability: bool
      * }
      */
@@ -248,13 +256,15 @@ class ScheduleService
         $nextWeekStart = $thisWeekStart->copy()->addWeek();
         $nextWeekEnd = $nextWeekStart->copy()->endOfWeek(CarbonInterface::FRIDAY)->startOfDay();
 
-        $thisWeek = $this->availableDaysInRange(
+        $rangeStart = $today->greaterThan($thisWeekStart) ? $today : $thisWeekStart;
+        $context = $this->availabilityContext(
             $doctor,
-            $today->greaterThan($thisWeekStart) ? $today : $thisWeekStart,
-            $thisWeekEnd,
+            $rangeStart->toDateString(),
+            $nextWeekEnd->toDateString(),
         );
 
-        $nextWeek = $this->availableDaysInRange($doctor, $nextWeekStart, $nextWeekEnd);
+        $thisWeek = $this->daysFromContext($rangeStart, $thisWeekEnd, $context);
+        $nextWeek = $this->daysFromContext($nextWeekStart, $nextWeekEnd, $context);
 
         return [
             'this_week' => $thisWeek->values()->all(),
@@ -266,62 +276,19 @@ class ScheduleService
     /**
      * Compute bookable start times for a calendar date.
      *
-     * @return Collection<int, string>  Slot start times (H:i)
+     * @return Collection<int, string> Slot start times (H:i)
      */
     public function availableSlots(User $doctor, CarbonInterface $date, ?int $exceptAppointmentId = null): Collection
     {
-        if (! $this->isDateBookable($doctor, $date)) {
-            return collect();
-        }
-
-        $settings = $this->getSettings($doctor);
-        $workingHour = $doctor->workingHours()
-            ->where('weekday', $date->dayOfWeek)
-            ->first();
-
-        if ($workingHour === null || ! $workingHour->is_open || $workingHour->start_time === null || $workingHour->end_time === null) {
-            return collect();
-        }
-
         $day = $date->copy()->timezone($this->clinicTimezone())->startOfDay();
-        $cursor = $day->copy()->setTimeFromTimeString($this->normalizeTime((string) $workingHour->start_time));
-        $windowEnd = $day->copy()->setTimeFromTimeString($this->normalizeTime((string) $workingHour->end_time));
-        $duration = max(1, (int) $settings->appointment_duration_minutes);
-        $gap = max(0, (int) $settings->break_duration_minutes);
-        $step = $duration + $gap;
+        $context = $this->availabilityContext(
+            $doctor,
+            $day->toDateString(),
+            $day->toDateString(),
+            $exceptAppointmentId,
+        );
 
-        $lunchStart = null;
-        $lunchEnd = null;
-
-        if ($settings->lunch_enabled && $settings->lunch_start && $settings->lunch_end) {
-            $lunchStart = $day->copy()->setTimeFromTimeString($this->normalizeTime((string) $settings->lunch_start));
-            $lunchEnd = $day->copy()->setTimeFromTimeString($this->normalizeTime((string) $settings->lunch_end));
-        }
-
-        $booked = $this->bookedStartTimes($doctor, $day, $exceptAppointmentId);
-        $now = $this->clinicNow();
-        $slots = collect();
-
-        while ($cursor->copy()->addMinutes($duration)->lte($windowEnd)) {
-            $slotEnd = $cursor->copy()->addMinutes($duration);
-            $time = $cursor->format('H:i');
-
-            $overlapsLunch = $lunchStart !== null
-                && $lunchEnd !== null
-                && $cursor->lt($lunchEnd)
-                && $slotEnd->gt($lunchStart);
-
-            $isPast = $day->isSameDay($now) && $cursor->lte($now);
-            $isTaken = $booked->contains($time);
-
-            if (! $overlapsLunch && ! $isPast && ! $isTaken) {
-                $slots->push($time);
-            }
-
-            $cursor->addMinutes($step);
-        }
-
-        return $slots;
+        return $this->computeAvailableSlots($day, $context);
     }
 
     /**
@@ -329,22 +296,19 @@ class ScheduleService
      */
     public function isDateBookable(User $doctor, CarbonInterface $date): bool
     {
-        if ($date->copy()->timezone($this->clinicTimezone())->startOfDay()->lt($this->clinicNow()->startOfDay())) {
+        $day = $date->copy()->timezone($this->clinicTimezone())->startOfDay();
+
+        if ($day->lt($this->clinicNow()->startOfDay())) {
             return false;
         }
 
-        if ($this->isHoliday($doctor, $date)) {
-            return false;
-        }
+        $context = $this->availabilityContext(
+            $doctor,
+            $day->toDateString(),
+            $day->toDateString(),
+        );
 
-        $workingHour = $doctor->workingHours()
-            ->where('weekday', $date->dayOfWeek)
-            ->first();
-
-        return $workingHour !== null
-            && $workingHour->is_open
-            && $workingHour->start_time !== null
-            && $workingHour->end_time !== null;
+        return $this->isDayBookable($day, $context);
     }
 
     /**
@@ -365,28 +329,194 @@ class ScheduleService
         return self::WEEKDAY_LABELS[$weekday] ?? (string) $weekday;
     }
 
-    private function isHoliday(User $doctor, CarbonInterface $date): bool
-    {
-        return $doctor->holidays()
-            ->whereDate('date', $date->toDateString())
-            ->exists();
-    }
-
     /**
-     * @return Collection<int, string>
+     * @return array{
+     *     settings: ScheduleSetting,
+     *     workingHours: Collection<int, WorkingHour>,
+     *     holidays: array<string, true>,
+     *     bookedByDate: array<string, array<string, true>>,
+     *     now: CarbonInterface
+     * }
      */
-    private function bookedStartTimes(User $doctor, CarbonInterface $date, ?int $exceptAppointmentId = null): Collection
-    {
-        return $doctor->appointments()
-            ->whereDate('date', $date->toDateString())
+    private function availabilityContext(
+        User $doctor,
+        string $fromDate,
+        string $toDate,
+        ?int $exceptAppointmentId = null,
+    ): array {
+        $settings = $this->getSettings($doctor);
+        $workingHours = $doctor->workingHours()->get()->keyBy('weekday');
+
+        $holidays = $doctor->holidays()
+            ->whereDate('date', '>=', $fromDate)
+            ->whereDate('date', '<=', $toDate)
+            ->pluck('date')
+            ->map(function (mixed $date): string {
+                if ($date instanceof CarbonInterface) {
+                    return $date->toDateString();
+                }
+
+                return Carbon::parse((string) $date)->toDateString();
+            })
+            ->flip()
+            ->all();
+
+        $bookedByDate = [];
+
+        $bookedRows = $doctor->appointments()
+            ->whereDate('date', '>=', $fromDate)
+            ->whereDate('date', '<=', $toDate)
             ->whereIn('status', [
                 AppointmentStatus::Pending->value,
                 AppointmentStatus::Confirmed->value,
             ])
             ->when($exceptAppointmentId, fn ($q, int $id) => $q->where('id', '!=', $id))
-            ->pluck('start_time')
-            ->map(fn (mixed $time): string => $this->normalizeTime((string) $time))
-            ->values();
+            ->get(['id', 'date', 'start_time']);
+
+        foreach ($bookedRows as $row) {
+            $dateKey = $row->date instanceof CarbonInterface
+                ? $row->date->toDateString()
+                : Carbon::parse((string) $row->date)->toDateString();
+            $timeKey = $this->normalizeTime((string) $row->start_time);
+            $bookedByDate[$dateKey][$timeKey] = true;
+        }
+
+        return [
+            'settings' => $settings,
+            'workingHours' => $workingHours,
+            'holidays' => $holidays,
+            'bookedByDate' => $bookedByDate,
+            'now' => $this->clinicNow(),
+        ];
+    }
+
+    /**
+     * @param  array{
+     *     settings: ScheduleSetting,
+     *     workingHours: Collection<int, WorkingHour>,
+     *     holidays: array<string, true>,
+     *     bookedByDate: array<string, array<string, true>>,
+     *     now: CarbonInterface
+     * }  $context
+     * @return Collection<int, array{date: string, weekday_label: string, day_label: string, times: list<array{value: string, label: string}>}>
+     */
+    private function daysFromContext(CarbonInterface $from, CarbonInterface $to, array $context): Collection
+    {
+        $days = collect();
+        $cursor = $from->copy()->startOfDay();
+        $end = $to->copy()->startOfDay();
+
+        while ($cursor->lte($end)) {
+            $times = $this->computeAvailableSlots($cursor, $context);
+
+            if ($times->isNotEmpty()) {
+                $days->push([
+                    'date' => $cursor->toDateString(),
+                    'weekday_label' => self::WEEKDAY_LABELS[$cursor->dayOfWeek],
+                    'day_label' => $cursor->locale('ar')->translatedFormat('j F'),
+                    'times' => $times->map(fn (string $time): array => [
+                        'value' => $time,
+                        'label' => TimeFormat::arabic($time),
+                    ])->values()->all(),
+                ]);
+            }
+
+            $cursor->addDay();
+        }
+
+        return $days;
+    }
+
+    /**
+     * @param  array{
+     *     settings: ScheduleSetting,
+     *     workingHours: Collection<int, WorkingHour>,
+     *     holidays: array<string, true>,
+     *     bookedByDate: array<string, array<string, true>>,
+     *     now: CarbonInterface
+     * }  $context
+     */
+    private function isDayBookable(CarbonInterface $date, array $context): bool
+    {
+        $day = $date->copy()->timezone($this->clinicTimezone())->startOfDay();
+
+        if ($day->lt($context['now']->copy()->startOfDay())) {
+            return false;
+        }
+
+        if (isset($context['holidays'][$day->toDateString()])) {
+            return false;
+        }
+
+        /** @var WorkingHour|null $workingHour */
+        $workingHour = $context['workingHours']->get($day->dayOfWeek);
+
+        return $workingHour !== null
+            && $workingHour->is_open
+            && $workingHour->start_time !== null
+            && $workingHour->end_time !== null;
+    }
+
+    /**
+     * @param  array{
+     *     settings: ScheduleSetting,
+     *     workingHours: Collection<int, WorkingHour>,
+     *     holidays: array<string, true>,
+     *     bookedByDate: array<string, array<string, true>>,
+     *     now: CarbonInterface
+     * }  $context
+     * @return Collection<int, string>
+     */
+    private function computeAvailableSlots(CarbonInterface $date, array $context): Collection
+    {
+        $day = $date->copy()->timezone($this->clinicTimezone())->startOfDay();
+
+        if (! $this->isDayBookable($day, $context)) {
+            return collect();
+        }
+
+        /** @var WorkingHour $workingHour */
+        $workingHour = $context['workingHours']->get($day->dayOfWeek);
+        $settings = $context['settings'];
+
+        $cursor = $day->copy()->setTimeFromTimeString($this->normalizeTime((string) $workingHour->start_time));
+        $windowEnd = $day->copy()->setTimeFromTimeString($this->normalizeTime((string) $workingHour->end_time));
+        $duration = max(1, (int) $settings->appointment_duration_minutes);
+        $gap = max(0, (int) $settings->break_duration_minutes);
+        $step = $duration + $gap;
+
+        $lunchStart = null;
+        $lunchEnd = null;
+
+        if ($settings->lunch_enabled && $settings->lunch_start && $settings->lunch_end) {
+            $lunchStart = $day->copy()->setTimeFromTimeString($this->normalizeTime((string) $settings->lunch_start));
+            $lunchEnd = $day->copy()->setTimeFromTimeString($this->normalizeTime((string) $settings->lunch_end));
+        }
+
+        $booked = $context['bookedByDate'][$day->toDateString()] ?? [];
+        $now = $context['now'];
+        $slots = collect();
+
+        while ($cursor->copy()->addMinutes($duration)->lte($windowEnd)) {
+            $slotEnd = $cursor->copy()->addMinutes($duration);
+            $time = $cursor->format('H:i');
+
+            $overlapsLunch = $lunchStart !== null
+                && $lunchEnd !== null
+                && $cursor->lt($lunchEnd)
+                && $slotEnd->gt($lunchStart);
+
+            $isPast = $day->isSameDay($now) && $cursor->lte($now);
+            $isTaken = isset($booked[$time]);
+
+            if (! $overlapsLunch && ! $isPast && ! $isTaken) {
+                $slots->push($time);
+            }
+
+            $cursor->addMinutes($step);
+        }
+
+        return $slots;
     }
 
     private function normalizeTime(string $time): string

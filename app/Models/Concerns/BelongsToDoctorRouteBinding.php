@@ -16,7 +16,11 @@ trait BelongsToDoctorRouteBinding
         $query = $this->newQuery()->where($field, $value);
 
         if (auth()->check()) {
-            $query->where('user_id', auth()->id());
+            $user = auth()->user();
+
+            if (! $user->isAdmin()) {
+                $query->where('user_id', $user->id);
+            }
         }
 
         return $query->first();

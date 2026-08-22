@@ -2,7 +2,6 @@
 
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
-use App\Models\AppointmentType;
 use App\Models\User;
 use App\Services\BookingService;
 use App\Services\ClinicSettingsService;
@@ -12,7 +11,6 @@ use Illuminate\Validation\ValidationException;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\post;
-use function Pest\Laravel\patch;
 
 test('duplicate booking for same slot is rejected', function () {
     Carbon::setTestNow(Carbon::parse('2026-07-29 08:00:00', 'Asia/Damascus'));
@@ -21,10 +19,7 @@ test('duplicate booking for same slot is rejected', function () {
     $doctor = User::factory()->create();
     app(ClinicSettingsService::class)->get($doctor);
 
-    $type = AppointmentType::factory()->create([
-        'user_id' => $doctor->id,
-        'is_active' => true,
-    ]);
+    $type = ensureFixedAppointmentTypes($doctor)->first();
 
     $schedule = app(ScheduleService::class);
     $schedule->getSettings($doctor);
@@ -43,13 +38,10 @@ test('duplicate booking for same slot is rejected', function () {
         'appointment_type_id' => $type->id,
     ]);
 
-    post(route('booking.store'), [
+    post(route('booking.store'), publicBookingPayload($doctor, $type, [
         'name' => 'مريض ثاني',
         'phone' => '+963959422414',
-        'date' => '2026-07-29',
-        'start_time' => '09:00',
-        'appointment_type_id' => $type->id,
-    ])->assertSessionHasErrors('start_time');
+    ]))->assertSessionHasErrors('start_time');
 
     expect(Appointment::query()->whereDate('date', '2026-07-29')->where('start_time', '09:00')->count())->toBe(1);
 });
@@ -61,10 +53,7 @@ test('completed appointment does not block the same slot', function () {
     $doctor = User::factory()->create();
     app(ClinicSettingsService::class)->get($doctor);
 
-    $type = AppointmentType::factory()->create([
-        'user_id' => $doctor->id,
-        'is_active' => true,
-    ]);
+    $type = ensureFixedAppointmentTypes($doctor)->first();
 
     $schedule = app(ScheduleService::class);
     $schedule->getSettings($doctor);
@@ -83,13 +72,11 @@ test('completed appointment does not block the same slot', function () {
         'appointment_type_id' => $type->id,
     ]);
 
-    post(route('booking.store'), [
+    post(route('booking.store'), publicBookingPayload($doctor, $type, [
         'name' => 'مريض جديد',
         'phone' => '+963959422415',
-        'date' => '2026-07-29',
         'start_time' => '10:00',
-        'appointment_type_id' => $type->id,
-    ])->assertRedirect(route('booking.success'));
+    ]))->assertRedirect(route('booking.success'));
 
     expect(Appointment::query()
         ->whereDate('date', '2026-07-29')
@@ -105,10 +92,7 @@ test('booking service rejects duplicate slot on create', function () {
     $doctor = User::factory()->create();
     app(ClinicSettingsService::class)->get($doctor);
 
-    $type = AppointmentType::factory()->create([
-        'user_id' => $doctor->id,
-        'is_active' => true,
-    ]);
+    $type = ensureFixedAppointmentTypes($doctor)->first();
 
     $schedule = app(ScheduleService::class);
     $schedule->getSettings($doctor);
@@ -199,10 +183,7 @@ test('reschedule rejects taken slot', function () {
     $doctor = User::factory()->create();
     app(ClinicSettingsService::class)->get($doctor);
 
-    $type = AppointmentType::factory()->create([
-        'user_id' => $doctor->id,
-        'is_active' => true,
-    ]);
+    $type = ensureFixedAppointmentTypes($doctor)->first();
 
     $schedule = app(ScheduleService::class);
     $schedule->getSettings($doctor);
@@ -243,18 +224,13 @@ test('public booking rejects past date', function () {
     $doctor = User::factory()->create();
     app(ClinicSettingsService::class)->get($doctor);
 
-    $type = AppointmentType::factory()->create([
-        'user_id' => $doctor->id,
-        'is_active' => true,
-    ]);
+    $type = ensureFixedAppointmentTypes($doctor)->first();
 
-    post(route('booking.store'), [
+    post(route('booking.store'), publicBookingPayload($doctor, $type, [
         'name' => 'مريض',
         'phone' => '+963959422417',
         'date' => '2026-07-28',
-        'start_time' => '09:00',
-        'appointment_type_id' => $type->id,
-    ])->assertSessionHasErrors('date');
+    ]))->assertSessionHasErrors('date');
 });
 
 test('active appointment sets slot guard key', function () {

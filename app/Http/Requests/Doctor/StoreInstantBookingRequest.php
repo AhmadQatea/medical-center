@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Doctor;
 
 use App\Enums\AppointmentStatus;
+use App\Http\Requests\Doctor\Concerns\ResolvesAdminBookingContext;
 use App\Rules\ActiveAppointmentType;
 use App\Rules\ValidBookableSlot;
 use App\Rules\ValidBookingDate;
@@ -13,6 +14,8 @@ use Illuminate\Validation\Rule;
 
 class StoreInstantBookingRequest extends FormRequest
 {
+    use ResolvesAdminBookingContext;
+
     public function authorize(): bool
     {
         return true;
@@ -23,12 +26,16 @@ class StoreInstantBookingRequest extends FormRequest
      */
     public function rules(): array
     {
+        $doctor = $this->targetDoctor();
+
         return [
+            'clinic_id' => ['nullable', 'integer', 'exists:clinics,id'],
+            'doctor_id' => ['nullable', 'integer', 'exists:users,id'],
             'name' => ['required', 'string', 'min:2', 'max:255'],
             'phone' => ['required', 'string', 'regex:/^\+9639\d{8}$/'],
             'date' => ['required', 'date', new ValidBookingDate],
-            'start_time' => ['required', 'date_format:H:i', new ValidBookableSlot($this->user())],
-            'appointment_type_id' => ['required', 'integer', new ActiveAppointmentType($this->user())],
+            'start_time' => ['required', 'date_format:H:i', new ValidBookableSlot($doctor)],
+            'appointment_type_id' => ['required', 'integer', new ActiveAppointmentType($doctor)],
             'status' => ['nullable', 'string', Rule::in([
                 AppointmentStatus::Confirmed->value,
                 AppointmentStatus::Pending->value,

@@ -2,19 +2,33 @@ export function registerBookingFlow(Alpine) {
     Alpine.data('bookingFlow', (weeks, appointmentTypes, options = {}) => ({
         weeks,
         appointmentTypes,
+        currentStep: 1,
+        wizard: options.wizard === true,
+        wizardSteps: ['service', 'schedule', 'patient', 'review'],
         selectedWeek: 'this',
         selectedDate: '',
         selectedTime: '',
         selectedTimeLabel: '',
-        patientName: '',
-        patientPhone: '',
-        appointmentTypeId: '',
+        patientName: options.initialName ?? '',
+        patientPhone: options.initialPhone ?? '',
+        appointmentTypeId: options.initialAppointmentTypeId
+            ? String(options.initialAppointmentTypeId)
+            : '',
         status: options.defaultStatus ?? '',
         submitting: false,
+        backUrl: options.backUrl ?? null,
 
         init() {
-            if (Array.isArray(this.appointmentTypes) && this.appointmentTypes.length === 1) {
+            if (
+                ! this.appointmentTypeId
+                && Array.isArray(this.appointmentTypes)
+                && this.appointmentTypes.length === 1
+            ) {
                 this.appointmentTypeId = String(this.appointmentTypes[0].id);
+            }
+
+            if (this.wizard && this.appointmentTypeId && this.appointmentTypes.length === 1) {
+                this.currentStep = 2;
             }
         },
 
@@ -62,6 +76,21 @@ export function registerBookingFlow(Alpine) {
             return /^\+9639\d{8}$/.test(this.normalizedPhone);
         },
 
+        get globalStep() {
+            return 2 + this.currentStep;
+        },
+
+        get stepTitle() {
+            const titles = {
+                1: 'اختر الخدمة',
+                2: 'اختر اليوم والوقت',
+                3: 'بيانات المريض',
+                4: 'مراجعة وتأكيد الحجز',
+            };
+
+            return titles[this.currentStep] ?? '';
+        },
+
         get missingFields() {
             const missing = [];
 
@@ -90,6 +119,47 @@ export function registerBookingFlow(Alpine) {
 
         get canSubmit() {
             return this.missingFields.length === 0 && ! this.submitting;
+        },
+
+        get canGoNext() {
+            if (this.submitting) {
+                return false;
+            }
+
+            switch (this.currentStep) {
+                case 1:
+                    return Boolean(this.appointmentTypeId);
+                case 2:
+                    return Boolean(this.selectedDate && this.selectedTime);
+                case 3:
+                    return this.patientName.trim().length >= 2 && this.phoneValid;
+                case 4:
+                    return this.canSubmit;
+                default:
+                    return false;
+            }
+        },
+
+        nextStep() {
+            if (! this.canGoNext || this.currentStep >= 4) {
+                return;
+            }
+
+            this.currentStep += 1;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+
+        prevStep() {
+            if (this.currentStep > 1) {
+                this.currentStep -= 1;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                return;
+            }
+
+            if (this.backUrl) {
+                window.location.href = this.backUrl;
+            }
         },
 
         normalizePhone(raw) {
@@ -143,17 +213,59 @@ export function registerBookingFlow(Alpine) {
             this.selectedTimeLabel = slot.label;
         },
 
-        onSubmit() {
+        onSubmit(event) {
             this.formatPhone();
 
+            if (this.wizard && this.currentStep < 4) {
+                event.preventDefault();
+
+                if (this.canGoNext) {
+                    this.nextStep();
+                }
+
+                return;
+            }
+
             if (! this.canSubmit) {
-                return false;
+                event.preventDefault();
+
+                return;
             }
 
             this.patientPhone = this.normalizedPhone;
             this.submitting = true;
+        },
+    }));
 
-            return true;
+    Alpine.data('bookingSelection', (options = {}) => ({
+        selected: options.initial ?? null,
+        urls: options.urls ?? {},
+        backUrl: options.backUrl ?? null,
+
+        select(id) {
+            this.selected = String(id);
+        },
+
+        isSelected(id) {
+            return this.selected !== null && String(this.selected) === String(id);
+        },
+
+        goNext() {
+            if (! this.selected) {
+                return;
+            }
+
+            const url = this.urls[this.selected] ?? this.urls[String(this.selected)] ?? null;
+
+            if (url) {
+                window.location.href = url;
+            }
+        },
+
+        goBack() {
+            if (this.backUrl) {
+                window.location.href = this.backUrl;
+            }
         },
     }));
 }

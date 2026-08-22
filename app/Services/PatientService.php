@@ -17,8 +17,11 @@ class PatientService
 
     public function listForDoctor(User $doctor, ?string $search = null, int $perPage = 15): LengthAwarePaginator
     {
-        return $doctor->patients()
-            ->withCount('appointments')
+        $query = $doctor->isAdmin()
+            ? Patient::query()->with(['user:id,name,clinic_id', 'user.clinic:id,name'])->withCount('appointments')
+            : $doctor->patients()->withCount('appointments');
+
+        return $query
             ->when($search, function ($query, string $search): void {
                 $query->where(function ($inner) use ($search): void {
                     $inner->where('name', 'like', "%{$search}%")

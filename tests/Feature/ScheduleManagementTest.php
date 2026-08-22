@@ -7,10 +7,6 @@ use App\Services\ScheduleService;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertDatabaseHas;
 use function Pest\Laravel\assertDatabaseMissing;
-use function Pest\Laravel\delete;
-use function Pest\Laravel\get;
-use function Pest\Laravel\post;
-use function Pest\Laravel\put;
 
 test('doctor can view schedule management without fake calendar preview', function () {
     $doctor = User::factory()->create();
@@ -48,7 +44,7 @@ test('doctor can save working days and schedule settings', function () {
             'days' => $ordered,
         ])
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('doctor.schedule.index'));
+        ->assertRedirect(doctorContextRoute('doctor.schedule.index', $doctor));
 
     assertDatabaseHas('schedule_settings', [
         'user_id' => $doctor->id,
@@ -72,7 +68,7 @@ test('doctor can add and remove holidays', function () {
             'date' => now()->addDays(3)->toDateString(),
             'title' => 'إجازة شخصية',
         ])
-        ->assertRedirect(route('doctor.schedule.index'));
+        ->assertRedirect(doctorContextRoute('doctor.schedule.index', $doctor));
 
     $holiday = Holiday::query()->where('user_id', $doctor->id)->firstOrFail();
 
@@ -83,7 +79,7 @@ test('doctor can add and remove holidays', function () {
 
     actingAs($doctor)
         ->delete(route('doctor.schedule.holidays.destroy', $holiday))
-        ->assertRedirect(route('doctor.schedule.index'));
+        ->assertRedirect(doctorContextRoute('doctor.schedule.index', $doctor));
 
     assertDatabaseMissing('holidays', [
         'id' => $holiday->id,
@@ -91,7 +87,7 @@ test('doctor can add and remove holidays', function () {
 });
 
 test('dashboard shows empty states instead of fake appointments', function () {
-    $doctor = User::factory()->create(['name' => 'العيادة السنية التخصصية']);
+    $doctor = User::factory()->create(['name' => 'د. سارة']);
 
     actingAs($doctor)
         ->get(route('doctor.dashboard'))

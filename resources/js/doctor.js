@@ -1,4 +1,3 @@
-import './bootstrap';
 import Alpine from 'alpinejs';
 import { registerBookingFlow } from './booking-flow';
 

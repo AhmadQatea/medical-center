@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Controllers\Doctor\AppointmentTypeController;
 use App\Http\Controllers\Doctor\BookingController;
+use App\Http\Controllers\Doctor\ClinicController;
 use App\Http\Controllers\Doctor\ClinicSettingsController;
 use App\Http\Controllers\Doctor\DashboardController;
+use App\Http\Controllers\Doctor\DoctorManagementController;
 use App\Http\Controllers\Doctor\PatientController;
 use App\Http\Controllers\Doctor\ProfileController;
 use App\Http\Controllers\Doctor\ScheduleController;
@@ -30,6 +31,14 @@ Route::middleware(['auth', 'throttle:120,1'])
         */
         Route::get('dashboard', DashboardController::class)->name('dashboard');
 
+        Route::middleware('admin')->group(function (): void {
+            Route::patch('clinics/{clinic}/toggle', [ClinicController::class, 'toggle'])->name('clinics.toggle');
+            Route::resource('clinics', ClinicController::class)->except(['show']);
+
+            Route::patch('doctors/{doctor}/toggle', [DoctorManagementController::class, 'toggle'])->name('doctors.toggle');
+            Route::resource('doctors', DoctorManagementController::class)->except(['show']);
+        });
+
         /*
         | Bookings — instant form + appointment resource
         */
@@ -46,19 +55,6 @@ Route::middleware(['auth', 'throttle:120,1'])
 
         Route::patch('bookings/{appointment}/status', [BookingController::class, 'updateStatus'])
             ->name('bookings.status');
-
-        /*
-        | Appointment types — doctor-managed visit types
-        */
-        Route::put('appointment-types/reorder', [AppointmentTypeController::class, 'reorder'])
-            ->name('appointment-types.reorder');
-
-        Route::patch('appointment-types/{appointment_type}/toggle', [AppointmentTypeController::class, 'toggle'])
-            ->name('appointment-types.toggle');
-
-        Route::resource('appointment-types', AppointmentTypeController::class)
-            ->except(['show'])
-            ->parameters(['appointment-types' => 'appointment_type']);
 
         /*
         | Timeline — today's appointments by time

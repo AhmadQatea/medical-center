@@ -9,18 +9,24 @@ class GenerateBookingConfirmationMessage
 {
     public function handle(Appointment $appointment): string
     {
-        $appointment->loadMissing(['patient', 'user.clinicSetting', 'appointmentType']);
+        $appointment->loadMissing(['patient', 'user.clinicSetting', 'appointmentType', 'clinic']);
 
         $patientName = $appointment->patient?->name ?? 'عزيزي المريض';
-        $clinicName = $appointment->user?->clinicSetting?->clinic_name ?? config('clinic.name');
+        $medicalCenterName = (string) config('clinic.medical_center.name');
+        $clinicName = $appointment->clinic?->name
+            ?? $appointment->user?->clinicSetting?->clinic_name
+            ?? '—';
+        $doctorName = $appointment->user?->name ?? '—';
         $dateLabel = $appointment->date?->locale('ar')->translatedFormat('l j F Y') ?? '';
         $timeLabel = TimeFormat::arabic((string) $appointment->start_time);
         $typeLabel = $appointment->typeLabel();
 
         return implode("\n", [
-            "السلام عليكم {$patientName}",
+            'طلب موعد جديد',
             '',
-            "تم تأكيد موعدكم في {$clinicName}.",
+            "المركز: {$medicalCenterName}",
+            "العيادة: {$clinicName}",
+            "الطبيب: {$doctorName}",
             '',
             '📅 التاريخ:',
             $dateLabel,
@@ -28,8 +34,11 @@ class GenerateBookingConfirmationMessage
             '🕐 الوقت:',
             $timeLabel,
             '',
-            '🦷 نوع الموعد:',
+            '📋 نوع الموعد:',
             $typeLabel,
+            '',
+            "👤 المريض: {$patientName}",
+            '📱 الهاتف: '.($appointment->patient?->phone ?? '—'),
             '',
             'يرجى الحضور قبل الموعد بعشر دقائق.',
             '',

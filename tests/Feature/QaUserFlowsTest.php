@@ -7,15 +7,13 @@ use App\Models\Patient;
 use App\Models\User;
 use App\Services\ClinicSettingsService;
 use App\Services\ScheduleService;
+use App\Support\TimeFormat;
 use Carbon\Carbon;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertDatabaseHas;
-use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
-use function Pest\Laravel\patch;
 use function Pest\Laravel\post;
-use function Pest\Laravel\put;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,6 +46,32 @@ test('qa dashboard shows real pending and today appointments', function () {
         ->assertOk()
         ->assertSee('مريض معلق QA')
         ->assertSee('قيد الانتظار');
+});
+
+test('admin dashboard shows appointments across all clinics and doctors', function () {
+    $admin = User::factory()->admin()->create();
+    ['doctor' => $doctor] = qaBookableDoctor('2026-07-29 08:00:00');
+
+    $pending = Appointment::factory()->for($doctor)->create([
+        'date' => '2026-07-29',
+        'start_time' => '10:00',
+        'status' => AppointmentStatus::Pending,
+    ]);
+    $pending->patient->update(['name' => 'مريض مركز QA']);
+
+    $upcoming = Appointment::factory()->for($doctor)->create([
+        'date' => '2026-07-30',
+        'start_time' => '11:00',
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+    $upcoming->patient->update(['name' => 'مريض قادم QA']);
+
+    actingAs($admin)
+        ->get(route('doctor.dashboard'))
+        ->assertOk()
+        ->assertSee('مريض مركز QA')
+        ->assertSee('مريض قادم QA')
+        ->assertDontSee('لا توجد طلبات معلقة');
 });
 
 /*
@@ -184,18 +208,31 @@ test('qa public booking shows no availability when no working days', function ()
     AppointmentType::factory()->create(['user_id' => $doctor->id, 'is_active' => true]);
     app(ScheduleService::class)->ensureWorkingHours($doctor);
 
-    get(route('booking.index'))
+    get(route('booking.book', [$doctor->clinic, $doctor]))
         ->assertOk()
         ->assertSee('لا توجد مواعيد متاحة');
 });
 
-test('qa public booking shows no types empty state', function () {
+test('qa public booking shows fixed appointment types', function () {
+    Carbon::setTestNow(Carbon::parse('2026-07-29 08:00:00', 'Asia/Damascus'));
+    $weekday = Carbon::parse('2026-07-29')->dayOfWeek;
+
     $doctor = User::factory()->create();
     app(ClinicSettingsService::class)->get($doctor);
 
-    get(route('booking.index'))
+    $schedule = app(ScheduleService::class);
+    $schedule->getSettings($doctor);
+    $schedule->updateSettings($doctor, [
+        'appointment_duration_minutes' => 30,
+        'break_duration_minutes' => 0,
+        'lunch_enabled' => false,
+    ]);
+    $schedule->syncWorkingHours($doctor, bookingWeekdayPayload(openWeekdays: [$weekday]));
+
+    get(route('booking.book', [$doctor->clinic, $doctor]))
         ->assertOk()
-        ->assertSee('لا توجد أنواع مواعيد متاحة حالياً');
+        ->assertSee('معاينة')
+        ->assertSee('مراجعة');
 });
 
 /*
@@ -210,7 +247,7 @@ test('qa instant booking page loads with schedule picker', function () {
     actingAs($doctor)
         ->get(route('doctor.bookings.instant'))
         ->assertOk()
-        ->assertSee('حجز فوري')
+        ->assertSee('إضافة حجز يدوي')
         ->assertSee('اختر الأسبوع');
 });
 
@@ -235,7 +272,7 @@ test('qa instant booking creates confirmed appointment', function () {
     ]);
 });
 
-test('qa instant booking shows empty state without appointment types', function () {
+test('qa instant booking auto provisions fixed appointment types', function () {
     Carbon::setTestNow(Carbon::parse('2026-07-29 08:00:00', 'Asia/Damascus'));
     $weekday = Carbon::parse('2026-07-29')->dayOfWeek;
 
@@ -251,12 +288,11 @@ test('qa instant booking shows empty state without appointment types', function 
     ]);
     $schedule->syncWorkingHours($doctor, bookingWeekdayPayload(openWeekdays: [$weekday]));
 
-    expect($doctor->appointmentTypes()->count())->toBe(0);
-
     actingAs($doctor)
         ->get(route('doctor.bookings.instant'))
         ->assertOk()
-        ->assertSee('لا توجد أنواع مواعيد متاحة');
+        ->assertSee('معاينة')
+        ->assertSee('مراجعة');
 });
 
 test('qa instant booking rejects duplicate slot', function () {
@@ -303,14 +339,14 @@ test('qa schedule management save and holiday flows work', function () {
             'lunch_enabled' => null,
             'days' => $days,
         ])
-        ->assertRedirect(route('doctor.schedule.index'));
+        ->assertRedirect(doctorContextRoute('doctor.schedule.index', $doctor));
 
     actingAs($doctor)
         ->post(route('doctor.schedule.holidays.store'), [
-            'date' => '2026-08-15',
+            'date' => '2026-09-15',
             'title' => 'QA Holiday',
         ])
-        ->assertRedirect(route('doctor.schedule.index'));
+        ->assertRedirect(doctorContextRoute('doctor.schedule.index', $doctor));
 
     assertDatabaseHas('holidays', [
         'user_id' => $doctor->id,
@@ -320,32 +356,17 @@ test('qa schedule management save and holiday flows work', function () {
 
 /*
 |--------------------------------------------------------------------------
-| Appointment Types
+| Fixed Appointment Types
 |--------------------------------------------------------------------------
 */
 
-test('qa appointment types crud and toggle', function () {
+test('qa fixed appointment types are provisioned for every doctor', function () {
     $doctor = User::factory()->create();
 
-    actingAs($doctor)
-        ->post(route('doctor.appointment-types.store'), [
-            'name' => 'نوع QA',
-            'color' => '#6B1E2A',
-        ])
-        ->assertRedirect(route('doctor.appointment-types.index'));
+    $types = ensureFixedAppointmentTypes($doctor);
 
-    $type = AppointmentType::query()->where('user_id', $doctor->id)->firstOrFail();
-
-    actingAs($doctor)
-        ->patch(route('doctor.appointment-types.toggle', $type))
-        ->assertRedirect(route('doctor.appointment-types.index'));
-
-    expect($type->fresh()->is_active)->toBeFalse();
-
-    actingAs($doctor)
-        ->get(route('doctor.appointment-types.index'))
-        ->assertOk()
-        ->assertSee('نوع QA');
+    expect($types)->toHaveCount(2);
+    expect($types->pluck('name')->all())->toBe(['معاينة', 'مراجعة']);
 });
 
 /*
@@ -414,7 +435,7 @@ test('qa clinic settings page loads and updates', function () {
     actingAs($doctor)
         ->get(route('doctor.settings.index'))
         ->assertOk()
-        ->assertSee(config('clinic.name'));
+        ->assertSee($doctor->clinic->name);
 
     actingAs($doctor)
         ->put(route('doctor.settings.update'), [
@@ -448,7 +469,7 @@ test('qa booking details page shows full information', function () {
         ->get(route('doctor.bookings.show', $appointment))
         ->assertOk()
         ->assertSee('معلومات المريض')
-        ->assertSee('معلومات الموعد')
+        ->assertSee('تفاصيل الزيارة')
         ->assertSee('تأكيد الحجز');
 });
 
@@ -535,14 +556,22 @@ test('qa doctor can reschedule pending booking to free slot', function () {
         ])
         ->assertRedirect(route('doctor.bookings.show', $appointment));
 
-    expect(\App\Support\TimeFormat::normalize((string) $appointment->fresh()->start_time))->toBe('13:00');
+    expect(TimeFormat::normalize((string) $appointment->fresh()->start_time))->toBe('13:00');
 });
 
 test('qa bookings list shows appointments and filters by status', function () {
     ['doctor' => $doctor] = qaBookableDoctor('2026-07-29 08:00:00');
 
-    $confirmed = Appointment::factory()->for($doctor)->create(['status' => AppointmentStatus::Confirmed]);
-    $pending = Appointment::factory()->for($doctor)->create(['status' => AppointmentStatus::Pending]);
+    $confirmed = Appointment::factory()->for($doctor)->create([
+        'status' => AppointmentStatus::Confirmed,
+        'date' => '2026-09-01',
+        'start_time' => '10:00:00',
+    ]);
+    $pending = Appointment::factory()->for($doctor)->create([
+        'status' => AppointmentStatus::Pending,
+        'date' => '2026-09-02',
+        'start_time' => '11:00:00',
+    ]);
     $confirmed->patient->update(['name' => 'مؤكد QA']);
     $pending->patient->update(['name' => 'معلق QA']);
 
@@ -575,10 +604,7 @@ function qaBookableDoctor(string $now, ?User $doctor = null): array
     $doctor ??= User::factory()->create();
     app(ClinicSettingsService::class)->get($doctor);
 
-    $type = AppointmentType::factory()->create([
-        'user_id' => $doctor->id,
-        'is_active' => true,
-    ]);
+    $type = ensureFixedAppointmentTypes($doctor)->first();
 
     $schedule = app(ScheduleService::class);
     $schedule->getSettings($doctor);
@@ -598,11 +624,7 @@ function qaBookableDoctor(string $now, ?User $doctor = null): array
  */
 function qaBookingPayload(AppointmentType $type, array $overrides = []): array
 {
-    return array_merge([
-        'name' => 'مريض QA',
-        'phone' => '+963999123456',
-        'date' => '2026-07-29',
-        'start_time' => '09:00',
-        'appointment_type_id' => $type->id,
-    ], $overrides);
+    $doctor = User::query()->findOrFail($type->user_id);
+
+    return publicBookingPayload($doctor, $type, $overrides);
 }

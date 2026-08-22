@@ -6,7 +6,6 @@ use App\Models\User;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertDatabaseHas;
 use function Pest\Laravel\get;
-use function Pest\Laravel\put;
 
 test('guests cannot view clinic settings', function () {
     get(route('doctor.settings.index'))
@@ -15,15 +14,16 @@ test('guests cannot view clinic settings', function () {
 
 test('doctor can view clinic settings page with defaults created', function () {
     $doctor = User::factory()->create();
+    $expectedClinicName = $doctor->clinic->name;
 
     actingAs($doctor)
         ->get(route('doctor.settings.index'))
         ->assertOk()
-        ->assertSee(config('clinic.name'));
+        ->assertSee($expectedClinicName);
 
     assertDatabaseHas('clinic_settings', [
         'user_id' => $doctor->id,
-        'clinic_name' => config('clinic.name'),
+        'clinic_name' => $expectedClinicName,
     ]);
 });
 
@@ -36,8 +36,8 @@ test('doctor can update clinic settings', function () {
 
     $response = actingAs($doctor)
         ->put(route('doctor.settings.update'), [
-            'clinic_name' => 'العيادة السنية التخصصية',
-            'doctor_name' => 'العيادة السنية التخصصية',
+            'clinic_name' => 'عيادة الأسنان',
+            'doctor_name' => 'د. محمد',
             'specialty' => 'طبيب أسنان',
             'city' => 'جدة',
             'description' => 'وصف محدث',
@@ -52,11 +52,11 @@ test('doctor can update clinic settings', function () {
 
     $doctor->refresh();
 
-    expect($doctor->name)->toBe('العيادة السنية التخصصية');
+    expect($doctor->name)->toBe('د. محمد');
 
     assertDatabaseHas('clinic_settings', [
         'user_id' => $doctor->id,
-        'clinic_name' => 'العيادة السنية التخصصية',
+        'clinic_name' => 'عيادة الأسنان',
         'specialty' => 'طبيب أسنان',
         'city' => 'جدة',
         'description' => 'وصف محدث',
@@ -71,8 +71,8 @@ test('clinic settings normalizes syrian whatsapp numbers on save', function () {
 
     actingAs($doctor)
         ->put(route('doctor.settings.update'), [
-            'clinic_name' => 'العيادة السنية التخصصية',
-            'doctor_name' => 'العيادة السنية التخصصية',
+            'clinic_name' => 'عيادة الأسنان',
+            'doctor_name' => 'د. محمد',
             'specialty' => 'طبيب أسنان',
             'whatsapp' => '+963999123456',
         ])

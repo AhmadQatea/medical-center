@@ -9,7 +9,7 @@
     'namePlaceholder' => 'اسمك الكامل',
 ])
 
-<div {{ $attributes->merge(['class' => 'space-y-4']) }}>
+<div {{ $attributes->merge(['class' => 'bk-panel space-y-4']) }}>
     <div class="w-full">
         <label class="ds-label" for="name">
             <span>{{ $nameLabel }}</span>

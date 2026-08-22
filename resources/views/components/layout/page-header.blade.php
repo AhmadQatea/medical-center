@@ -13,10 +13,8 @@
         {{ $slot }}
 
         @if ($description)
-            <p class="max-w-2xl text-sm leading-relaxed text-foreground-muted">{{ $description }}</p>
+            <p class="max-w-2xl text-sm leading-relaxed text-foreground-muted sm:text-base">{{ $description }}</p>
         @endif
-
-        <div class="ds-gold-line !mt-3" aria-hidden="true"></div>
     </div>
 
     @isset($actions)

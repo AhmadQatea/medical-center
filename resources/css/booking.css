@@ -1,3 +1,13 @@
 /*
-| Public booking surface — shared tokens live in app.css
+| Public booking surface — tokens + styles live in app.css (bk-*)
 */
+
+:root {
+    --booking-primary: #00696f;
+    --booking-primary-light: #1ca7b0;
+    --booking-soft: #c6e5ea;
+    --booking-surface: #f8fafb;
+    --booking-card-border: #bcc9ca;
+    --booking-muted-bar: #e6e8e9;
+    --booking-confirm: #00a911;
+}

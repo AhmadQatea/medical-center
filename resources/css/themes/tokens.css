@@ -1,61 +1,61 @@
 /*
 |--------------------------------------------------------------------------
-| Theme CSS Variables — Dental Medical Clinic
+| Theme CSS Variables — CarePoint Medical Center
 |--------------------------------------------------------------------------
-| Deep Burgundy · Luxury Gold · Warm White · Charcoal
+| Teal primary · clean white · soft gray surfaces
 */
 
 :root {
-    --color-primary: #6B1E2A;
-    --color-primary-soft: #F8F0F2;
-    --color-primary-muted: #D4A8B0;
-    --color-primary-hover: #541722;
+    --color-primary: #0D9488;
+    --color-primary-soft: #F0FDFA;
+    --color-primary-muted: #99F6E4;
+    --color-primary-hover: #0F766E;
     --color-primary-foreground: #FFFFFF;
 
-    --color-secondary: #1F1A17;
-    --color-secondary-soft: #F3F0EC;
-    --color-secondary-hover: #2C2622;
+    --color-secondary: #134E4A;
+    --color-secondary-soft: #ECFDF5;
+    --color-secondary-hover: #115E59;
     --color-secondary-foreground: #FFFFFF;
 
-    --color-accent: #C9A84C;
-    --color-accent-soft: #FBF6E8;
-    --color-accent-foreground: #5C4A1A;
+    --color-accent: #14B8A6;
+    --color-accent-soft: #CCFBF1;
+    --color-accent-foreground: #134E4A;
 
     --color-sidebar: #FFFFFF;
-    --color-sidebar-foreground: #3D3834;
-    --color-sidebar-muted: #F8F0F2;
-    --color-sidebar-border: #EAE6E0;
+    --color-sidebar-foreground: #475569;
+    --color-sidebar-muted: #F0FDFA;
+    --color-sidebar-border: #E2E8F0;
 
     --color-navbar: #FFFFFF;
-    --color-navbar-foreground: #1F1A17;
-    --color-navbar-border: #EAE6E0;
+    --color-navbar-foreground: #0F172A;
+    --color-navbar-border: #E2E8F0;
 
-    --color-success: #0F766E;
-    --color-success-soft: #F0FDFA;
-    --color-success-foreground: #134E4A;
+    --color-success: #059669;
+    --color-success-soft: #ECFDF5;
+    --color-success-foreground: #065F46;
 
-    --color-warning: #B45309;
+    --color-warning: #D97706;
     --color-warning-soft: #FFFBEB;
-    --color-warning-foreground: #78350F;
+    --color-warning-foreground: #92400E;
 
-    --color-danger: #B91C1C;
+    --color-danger: #DC2626;
     --color-danger-soft: #FEF2F2;
-    --color-danger-foreground: #7F1D1D;
+    --color-danger-foreground: #991B1B;
 
-    --color-background: #F7F4EF;
+    --color-background: #F8FAFC;
     --color-surface: #FFFFFF;
-    --color-surface-muted: #FAF8F5;
-    --color-surface-subtle: #F0EDE8;
-    --color-border: #EAE6E0;
+    --color-surface-muted: #F8FAFC;
+    --color-surface-subtle: #F1F5F9;
+    --color-border: #E2E8F0;
 
-    --color-text: #1F1A17;
-    --color-text-muted: #6B6560;
-    --color-text-subtle: #9A948C;
+    --color-text: #0F172A;
+    --color-text-muted: #64748B;
+    --color-text-subtle: #94A3B8;
 
-    --color-overlay: rgb(31 26 23 / 0.40);
+    --color-overlay: rgb(15 23 42 / 0.40);
 
-    --radius: 1rem;
-    --radius-lg: 1.25rem;
+    --radius: 0.75rem;
+    --radius-lg: 1rem;
 
     --logo-url: none;
     --logo-dark-url: none;

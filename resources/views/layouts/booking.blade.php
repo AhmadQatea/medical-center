@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'حجز موعد') — {{ $settings->clinic_name ?? config('clinic.name') }}</title>
+    <title>@yield('title', 'حجز موعد') — {{ $medicalCenterName ?? config('clinic.medical_center.name') }}</title>
 
     <x-theme.provider />
 
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=cairo:400,500,600,700&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+    <link href="https://fonts.bunny.net/css?family=cairo:400,600,700&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/css/booking.css', 'resources/js/booking.js'])
     @stack('styles')

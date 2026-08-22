@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\AppointmentStatus;
-use App\Models\AppointmentType;
+use App\Models\Appointment;
 use App\Models\User;
 use App\Services\ClinicSettingsService;
 use App\Services\ScheduleService;
@@ -9,21 +9,17 @@ use Carbon\Carbon;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertDatabaseHas;
+use function Pest\Laravel\get;
 use function Pest\Laravel\post;
 
-test('public booking stores pending appointment in database', function () {
+test('booking success shows whatsapp link to medical center with booking details', function () {
     Carbon::setTestNow(Carbon::parse('2026-07-29 08:00:00'));
     $weekday = Carbon::parse('2026-07-29')->dayOfWeek;
 
     $doctor = User::factory()->create();
     app(ClinicSettingsService::class)->get($doctor);
 
-    $type = AppointmentType::factory()->create([
-        'user_id' => $doctor->id,
-        'name' => 'استشارة',
-        'is_active' => true,
-        'display_order' => 1,
-    ]);
+    $type = ensureFixedAppointmentTypes($doctor)->firstWhere('name', 'معاينة');
 
     $schedule = app(ScheduleService::class);
     $schedule->getSettings($doctor);
@@ -34,13 +30,40 @@ test('public booking stores pending appointment in database', function () {
     ]);
     $schedule->syncWorkingHours($doctor, bookingWeekdayPayload(openWeekdays: [$weekday]));
 
-    post(route('booking.store'), [
+    post(route('booking.store'), publicBookingPayload($doctor, $type, [
         'name' => 'أحمد علي',
         'phone' => '+963999123456',
-        'date' => '2026-07-29',
-        'start_time' => '09:00',
-        'appointment_type_id' => $type->id,
-    ])
+    ]))->assertRedirect(route('booking.success'));
+
+    get(route('booking.success'))
+        ->assertOk()
+        ->assertSee('إرسال الحجز عبر واتساب')
+        ->assertSee('أحمد علي')
+        ->assertSee('wa.me/'.config('clinic.medical_center.whatsapp'), false);
+});
+
+test('public booking stores pending appointment in database', function () {
+    Carbon::setTestNow(Carbon::parse('2026-07-29 08:00:00'));
+    $weekday = Carbon::parse('2026-07-29')->dayOfWeek;
+
+    $doctor = User::factory()->create();
+    app(ClinicSettingsService::class)->get($doctor);
+
+    $type = ensureFixedAppointmentTypes($doctor)->firstWhere('name', 'معاينة');
+
+    $schedule = app(ScheduleService::class);
+    $schedule->getSettings($doctor);
+    $schedule->updateSettings($doctor, [
+        'appointment_duration_minutes' => 30,
+        'break_duration_minutes' => 0,
+        'lunch_enabled' => false,
+    ]);
+    $schedule->syncWorkingHours($doctor, bookingWeekdayPayload(openWeekdays: [$weekday]));
+
+    post(route('booking.store'), publicBookingPayload($doctor, $type, [
+        'name' => 'أحمد علي',
+        'phone' => '+963999123456',
+    ]))
         ->assertRedirect(route('booking.success'));
 
     assertDatabaseHas('appointments', [
@@ -59,7 +82,7 @@ test('doctor can confirm pending booking', function () {
     $doctor = User::factory()->create();
     app(ClinicSettingsService::class)->get($doctor);
 
-    $appointment = \App\Models\Appointment::factory()
+    $appointment = Appointment::factory()
         ->for($doctor)
         ->create(['status' => AppointmentStatus::Pending]);
 
@@ -70,34 +93,34 @@ test('doctor can confirm pending booking', function () {
     expect($appointment->fresh()->status)->toBe(AppointmentStatus::Confirmed);
 });
 
-test('doctor can manage appointment types', function () {
+test('doctor gets fixed appointment types automatically', function () {
     $doctor = User::factory()->create();
 
-    actingAs($doctor)
-        ->post(route('doctor.appointment-types.store'), [
-            'name' => 'معاينة',
-            'color' => '#6B1E2A',
-        ])
-        ->assertRedirect(route('doctor.appointment-types.index'));
+    $types = ensureFixedAppointmentTypes($doctor);
 
-    assertDatabaseHas('appointment_types', [
-        'user_id' => $doctor->id,
-        'name' => 'معاينة',
-        'is_active' => true,
-    ]);
+    expect($types)->toHaveCount(2);
+    expect($types->pluck('name')->all())->toBe(['معاينة', 'مراجعة']);
 });
 
 test('doctor bookings index lists appointments and filters by status', function () {
     $doctor = User::factory()->create();
     app(ClinicSettingsService::class)->get($doctor);
 
-    $confirmed = \App\Models\Appointment::factory()
+    $confirmed = Appointment::factory()
         ->for($doctor)
-        ->create(['status' => AppointmentStatus::Confirmed]);
+        ->create([
+            'status' => AppointmentStatus::Confirmed,
+            'date' => '2026-09-01',
+            'start_time' => '10:00:00',
+        ]);
 
-    $pending = \App\Models\Appointment::factory()
+    $pending = Appointment::factory()
         ->for($doctor)
-        ->create(['status' => AppointmentStatus::Pending]);
+        ->create([
+            'status' => AppointmentStatus::Pending,
+            'date' => '2026-09-02',
+            'start_time' => '11:00:00',
+        ]);
 
     $confirmed->patient->update(['name' => 'مريض مؤكد']);
     $pending->patient->update(['name' => 'مريض معلق']);
@@ -107,7 +130,7 @@ test('doctor bookings index lists appointments and filters by status', function 
         ->assertOk()
         ->assertSee('مريض مؤكد')
         ->assertSee('مريض معلق')
-        ->assertSee('عدد النتائج');
+        ->assertSee('من أصل');
 
     actingAs($doctor)
         ->get(route('doctor.bookings.index', ['status' => AppointmentStatus::Confirmed->value]))

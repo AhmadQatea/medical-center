@@ -18,6 +18,13 @@ Route::prefix('book')
     ->group(function (): void {
         Route::get('/', [PublicBookingController::class, 'index'])->name('index');
 
+        Route::get('/clinic/{clinic:slug}', [PublicBookingController::class, 'clinic'])->name('clinic');
+
+        Route::get('/clinic/{clinic:slug}/doctor/{doctor}', [PublicBookingController::class, 'book'])
+            ->name('book');
+
+        Route::get('/doctor/{doctor}', [PublicBookingController::class, 'doctorEntry'])->name('doctor');
+
         Route::post('/', [PublicBookingController::class, 'store'])
             ->middleware('throttle:10,1')
             ->name('store');

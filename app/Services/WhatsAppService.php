@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Actions\Booking\GenerateBookingConfirmationMessage;
+use App\Actions\Booking\GeneratePublicBookingRequestMessage;
 use App\Models\Appointment;
 
 /**
@@ -12,6 +13,7 @@ class WhatsAppService
 {
     public function __construct(
         private GenerateBookingConfirmationMessage $generateMessage,
+        private GeneratePublicBookingRequestMessage $generatePublicRequestMessage,
     ) {}
 
     /**
@@ -30,6 +32,30 @@ class WhatsAppService
     public function confirmationMessage(Appointment $appointment): string
     {
         return $this->generateMessage->handle($appointment);
+    }
+
+    /**
+     * Open WhatsApp to the medical center with the patient's booking request details.
+     */
+    public function centerBookingRequestUrl(Appointment $appointment): ?string
+    {
+        $number = $this->centerNumber();
+
+        if ($number === '') {
+            return null;
+        }
+
+        return $this->url($number, $this->generatePublicRequestMessage->handle($appointment));
+    }
+
+    public function centerNumber(): string
+    {
+        return (string) config('clinic.medical_center.whatsapp');
+    }
+
+    public function publicBookingRequestMessage(Appointment $appointment): string
+    {
+        return $this->generatePublicRequestMessage->handle($appointment);
     }
 
     public function normalizeNumber(string $number): string

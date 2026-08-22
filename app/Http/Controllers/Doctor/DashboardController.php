@@ -17,16 +17,18 @@ class DashboardController extends Controller
 
     public function __invoke(Request $request): View
     {
-        $doctor = $request->user();
+        $actor = $request->user();
 
         return view('doctor.dashboard.index', [
             'todayLabel' => now()->locale('ar')->translatedFormat('l j F Y'),
-            'stats' => $this->bookings->dashboardStats($doctor),
-            'pendingAppointments' => $this->bookings->pendingForDoctor($doctor),
-            'confirmedAppointments' => $this->bookings->confirmedForDoctor($doctor),
-            'todayAppointments' => $this->bookings->todayForDoctor($doctor),
-            'upcomingAppointments' => $this->bookings->upcomingForDoctor($doctor),
-            'availableSlots' => $this->schedule->availableSlots($doctor, now()),
+            'stats' => $this->bookings->dashboardStats($actor),
+            'pendingAppointments' => $this->bookings->pendingForDoctor($actor),
+            'confirmedAppointments' => $this->bookings->confirmedForDoctor($actor),
+            'todayAppointments' => $this->bookings->todayForDoctor($actor),
+            'upcomingAppointments' => $this->bookings->upcomingForDoctor($actor),
+            'availableSlots' => $actor->isAdmin()
+                ? collect()
+                : $this->schedule->availableSlots($actor, now()),
         ]);
     }
 }
