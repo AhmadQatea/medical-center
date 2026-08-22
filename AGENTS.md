@@ -25,7 +25,7 @@ Keep Laravel Boost guidelines (below) intact. Prefer this project section for pr
 **Login (local seeder defaults):**
 - Email: `clinic@example.com` (override with `DOCTOR_EMAIL` / `config('clinic.seed_doctor')`)
 - Name: `مدير المركز` (admin role)
-- Password: `admin123123` locally (override with `DOCTOR_PASSWORD`; **required** outside `local`/`testing`)
+- Password: `admin123123` (override with `DOCTOR_PASSWORD` in any environment)
 - Login rate limit: 5 attempts (`LoginRequest` + route `throttle:5,1`)
 
 **Public registration:** disabled. Admin account seeded locally; doctors managed in DB.

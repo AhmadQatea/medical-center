@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Services\ClinicSettingsService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use RuntimeException;
 
 class DatabaseSeeder extends Seeder
 {
@@ -19,15 +18,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $password = config('clinic.seed_doctor.password');
-
-        if ($password === null || $password === '') {
-            if (! app()->environment(['local', 'testing'])) {
-                throw new RuntimeException('Set DOCTOR_PASSWORD before seeding outside local/testing.');
-            }
-
-            $password = 'admin123123';
-        }
+        $password = (string) (config('clinic.seed_doctor.password') ?: 'admin123123');
 
         /** @var array{name: string, slug: string, specialty: string, description: string|null} $department */
         $department = config('clinic.default_department');

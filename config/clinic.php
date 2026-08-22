@@ -63,7 +63,8 @@ return [
     'seed_doctor' => [
         'email' => env('DOCTOR_EMAIL', 'clinic@example.com'),
         'name' => env('ADMIN_NAME', 'مدير المركز'),
-        'password' => env('DOCTOR_PASSWORD'),
+        // Override in production with DOCTOR_PASSWORD when possible.
+        'password' => env('DOCTOR_PASSWORD', 'admin123123'),
     ],
 
 ];
