@@ -74,13 +74,13 @@ test('clinic settings normalizes syrian whatsapp numbers on save', function () {
             'clinic_name' => 'عيادة الأسنان',
             'doctor_name' => 'د. محمد',
             'specialty' => 'طبيب أسنان',
-            'whatsapp' => '+963999123456',
+            'whatsapp' => '0959422413',
         ])
         ->assertSessionHasNoErrors();
 
     assertDatabaseHas('clinic_settings', [
         'user_id' => $doctor->id,
-        'whatsapp_number' => '963999123456',
+        'whatsapp_number' => '963959422413',
     ]);
 });
 

@@ -5,6 +5,7 @@ use App\Models\Appointment;
 use App\Models\User;
 use App\Services\ClinicSettingsService;
 use App\Services\ScheduleService;
+use App\Services\WhatsAppService;
 use Carbon\Carbon;
 
 use function Pest\Laravel\actingAs;
@@ -35,11 +36,52 @@ test('booking success shows whatsapp link to medical center with booking details
         'phone' => '+963999123456',
     ]))->assertRedirect(route('booking.success'));
 
+    $centerNumber = app(WhatsAppService::class)
+        ->normalizeNumber((string) config('clinic.medical_center.whatsapp'));
+
     get(route('booking.success'))
         ->assertOk()
         ->assertSee('إرسال الحجز عبر واتساب')
         ->assertSee('أحمد علي')
-        ->assertSee('wa.me/'.config('clinic.medical_center.whatsapp'), false);
+        ->assertSee('wa.me/'.$centerNumber, false);
+});
+
+test('booking success uses the whatsapp number saved in clinic settings', function () {
+    Carbon::setTestNow(Carbon::parse('2026-07-29 08:00:00'));
+    $weekday = Carbon::parse('2026-07-29')->dayOfWeek;
+
+    $doctor = User::factory()->create();
+    app(ClinicSettingsService::class)->get($doctor);
+
+    actingAs($doctor)
+        ->put(route('doctor.settings.update'), [
+            'clinic_name' => $doctor->clinic->name,
+            'doctor_name' => $doctor->name,
+            'specialty' => 'طبيب أسنان',
+            'whatsapp' => '0959422413',
+        ])
+        ->assertSessionHasNoErrors();
+
+    $type = ensureFixedAppointmentTypes($doctor)->firstWhere('name', 'معاينة');
+
+    $schedule = app(ScheduleService::class);
+    $schedule->getSettings($doctor);
+    $schedule->updateSettings($doctor, [
+        'appointment_duration_minutes' => 30,
+        'break_duration_minutes' => 0,
+        'lunch_enabled' => false,
+    ]);
+    $schedule->syncWorkingHours($doctor, bookingWeekdayPayload(openWeekdays: [$weekday]));
+
+    post(route('booking.store'), publicBookingPayload($doctor, $type, [
+        'name' => 'أحمد علي',
+        'phone' => '+963999123456',
+    ]))->assertRedirect(route('booking.success'));
+
+    get(route('booking.success'))
+        ->assertOk()
+        ->assertSee('wa.me/963959422413', false)
+        ->assertDontSee('wa.me/963999123456', false);
 });
 
 test('public booking stores pending appointment in database', function () {

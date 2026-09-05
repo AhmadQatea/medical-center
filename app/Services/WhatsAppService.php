@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Actions\Booking\GenerateBookingConfirmationMessage;
 use App\Actions\Booking\GeneratePublicBookingRequestMessage;
 use App\Models\Appointment;
+use App\Models\User;
 
 /**
  * Builds WhatsApp deep links for booking confirmations.
@@ -14,6 +15,7 @@ class WhatsAppService
     public function __construct(
         private GenerateBookingConfirmationMessage $generateMessage,
         private GeneratePublicBookingRequestMessage $generatePublicRequestMessage,
+        private ClinicSettingsService $clinicSettings,
     ) {}
 
     /**
@@ -39,7 +41,9 @@ class WhatsAppService
      */
     public function centerBookingRequestUrl(Appointment $appointment): ?string
     {
-        $number = $this->centerNumber();
+        $appointment->loadMissing('user');
+
+        $number = $this->centerNumber($appointment->user);
 
         if ($number === '') {
             return null;
@@ -48,8 +52,16 @@ class WhatsAppService
         return $this->url($number, $this->generatePublicRequestMessage->handle($appointment));
     }
 
-    public function centerNumber(): string
+    public function centerNumber(?User $doctor = null): string
     {
+        if ($doctor !== null) {
+            $saved = trim((string) $this->clinicSettings->get($doctor)->whatsapp_number);
+
+            if ($saved !== '') {
+                return $saved;
+            }
+        }
+
         return (string) config('clinic.medical_center.whatsapp');
     }
 

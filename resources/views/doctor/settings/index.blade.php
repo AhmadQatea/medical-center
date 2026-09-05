@@ -51,7 +51,7 @@
                     :value="$settings->whatsapp_number"
                     dir="ltr"
                     required
-                    help="مثال: +963999123456 أو 0999123456"
+                    help="مثال: 0959422413 أو +963959422413"
                 />
             </x-ui.card>
         </x-ui.section>

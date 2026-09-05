@@ -27,7 +27,7 @@ class ClinicSettingFactory extends Factory
             'description' => 'رعاية طبية متخصصة ضمن المركز الطبي.',
             'city' => null,
             'address' => null,
-            'whatsapp_number' => '963999123456',
+            'whatsapp_number' => '0959422413',
             'logo_path' => null,
             'photo_path' => null,
         ];

@@ -13,7 +13,7 @@ return [
         'name' => env('MEDICAL_CENTER_NAME', 'المركز الطبي التخصصي'),
         'name_en' => env('MEDICAL_CENTER_NAME_EN', 'Specialized Medical Center'),
         'description' => env('MEDICAL_CENTER_DESCRIPTION', 'مركز طبي متكامل يضم عدة عيادات وتخصصات.'),
-        'whatsapp' => env('MEDICAL_CENTER_WHATSAPP', env('CLINIC_WHATSAPP', '963999123456')),
+        'whatsapp' => env('MEDICAL_CENTER_WHATSAPP', env('CLINIC_WHATSAPP', '0959422413')),
         'email' => env('MEDICAL_CENTER_EMAIL', env('DOCTOR_EMAIL', 'clinic@example.com')),
         'address' => env('MEDICAL_CENTER_ADDRESS'),
         'city' => env('MEDICAL_CENTER_CITY'),
@@ -46,7 +46,7 @@ return [
     'description' => env('DEFAULT_CLINIC_DESCRIPTION', 'رعاية أسنان متخصصة ضمن المركز الطبي.'),
     'city' => env('MEDICAL_CENTER_CITY'),
     'address' => env('MEDICAL_CENTER_ADDRESS'),
-    'whatsapp' => env('MEDICAL_CENTER_WHATSAPP', env('CLINIC_WHATSAPP', '963999123456')),
+    'whatsapp' => env('MEDICAL_CENTER_WHATSAPP', env('CLINIC_WHATSAPP', '0959422413')),
     'email' => env('MEDICAL_CENTER_EMAIL', env('DOCTOR_EMAIL', 'clinic@example.com')),
 
     'doctor' => [
